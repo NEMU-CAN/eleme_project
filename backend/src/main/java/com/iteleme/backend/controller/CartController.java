@@ -1,11 +1,11 @@
 package com.iteleme.backend.controller;
 
+import com.iteleme.backend.entity.Result;
 import com.iteleme.backend.service.CartService;
-import com.iteleme.backend.vo.CartItemVO;
 import com.iteleme.backend.vo.request.CartCreateRequest;
 import com.iteleme.backend.vo.request.CartUpdateRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -18,43 +18,62 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 购物车接口。
+ */
 @RestController
 @RequestMapping("/api/users/{userId}/cart-items")
-@RequiredArgsConstructor
 public class CartController {
-    private final CartService cartService;
+    /** 购物车业务服务。 */
+    @Autowired
+    private CartService cartService;
 
+    /**
+     * 查询用户购物车列表。
+     */
     @GetMapping
-    public List<CartItemVO> listUserCartItems(@PathVariable("userId") String userId,
-                                              @RequestParam(value = "businessId", required = false) Integer businessId) {
-        return cartService.listCartItems(userId, businessId);
+    public Result listUserCartItems(@PathVariable("userId") String userId,
+                                    @RequestParam(value = "businessId", required = false) Integer businessId) {
+        return Result.success(cartService.listCartItems(userId, businessId));
     }
 
+    /**
+     * 新增或累加购物车条目。
+     */
     @PostMapping
-    public CartItemVO upsertCartItem(@PathVariable("userId") String userId,
-                                     @RequestBody CartCreateRequest request) {
-        return cartService.upsertCartItem(userId, request);
+    public Result upsertCartItem(@PathVariable("userId") String userId,
+                                 @RequestBody CartCreateRequest request) {
+        return Result.success(cartService.upsertCartItem(userId, request));
     }
 
+    /**
+     * 修改购物车条目数量。
+     */
     @PatchMapping("/{cartId}")
-    public CartItemVO updateCartItemQuantity(@PathVariable("userId") String userId,
-                                             @PathVariable("cartId") Integer cartId,
-                                             @RequestBody CartUpdateRequest request) {
-        return cartService.updateCartItemQuantity(userId, cartId, request);
+    public Result updateCartItemQuantity(@PathVariable("userId") String userId,
+                                         @PathVariable("cartId") Integer cartId,
+                                         @RequestBody CartUpdateRequest request) {
+        return Result.success(cartService.updateCartItemQuantity(userId, cartId, request));
     }
 
+    /**
+     * 按条件删除购物车条目。
+     */
     @DeleteMapping
-    public ResponseEntity<Void> deleteCartItemsByFilter(@PathVariable("userId") String userId,
-                                                        @RequestParam(value = "businessId", required = false) Integer businessId,
-                                                        @RequestParam(value = "foodId", required = false) Integer foodId) {
+    public Result deleteCartItemsByFilter(@PathVariable("userId") String userId,
+                                          @RequestParam(value = "businessId", required = false) Integer businessId,
+                                          @RequestParam(value = "foodId", required = false) Integer foodId) {
         cartService.deleteCartItemsByFilter(userId, businessId, foodId);
-        return ResponseEntity.noContent().build();
+        return Result.success();
     }
 
+    /**
+     * 删除指定购物车条目。
+     */
     @DeleteMapping("/{cartId}")
-    public ResponseEntity<Void> deleteCartItem(@PathVariable("userId") String userId,
-                                               @PathVariable("cartId") Integer cartId) {
+    public Result deleteCartItem(@PathVariable("userId") String userId,
+                                 @PathVariable("cartId") Integer cartId) {
         cartService.deleteCartItem(userId, cartId);
-        return ResponseEntity.noContent().build();
+        return Result.success();
     }
 }

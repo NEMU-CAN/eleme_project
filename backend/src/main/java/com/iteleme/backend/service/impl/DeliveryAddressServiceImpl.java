@@ -8,16 +8,26 @@ import com.iteleme.backend.service.DeliveryAddressService;
 import com.iteleme.backend.vo.DeliveryAddressVO;
 import com.iteleme.backend.vo.request.DeliveryAddressRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
+/**
+ * 送货地址业务实现。
+ */
 public class DeliveryAddressServiceImpl implements DeliveryAddressService {
-    private final DeliveryAddressMapper deliveryAddressMapper;
-    private final UserMapper userMapper;
+    /** 送货地址表数据访问对象。 */
+    @Autowired
+    private DeliveryAddressMapper deliveryAddressMapper;
+    /** 用户表数据访问对象。 */
+    @Autowired
+    private UserMapper userMapper;
 
+    /**
+     * 查询用户地址列表。
+     */
     @Override
     public List<DeliveryAddressVO> listDeliveryAddressesByUserId(String userId) {
         ensureActiveUser(userId);
@@ -26,6 +36,9 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
                 .toList();
     }
 
+    /**
+     * 查询指定地址。
+     */
     @Override
     public DeliveryAddressVO getDeliveryAddressById(String userId, Integer daId) {
         ensureActiveUser(userId);
@@ -37,6 +50,9 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
         return VoConverters.toDeliveryAddressVO(deliveryAddress);
     }
 
+    /**
+     * 新增送货地址。
+     */
     @Override
     public DeliveryAddressVO createDeliveryAddress(String userId, DeliveryAddressRequest request) {
         ensureActiveUser(userId);
@@ -52,6 +68,9 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
         return VoConverters.toDeliveryAddressVO(deliveryAddress);
     }
 
+    /**
+     * 修改送货地址。
+     */
     @Override
     public DeliveryAddressVO updateDeliveryAddress(String userId, Integer daId, DeliveryAddressRequest request) {
         ensureActiveUser(userId);
@@ -62,7 +81,7 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
         }
 
         DeliveryAddress deliveryAddress = new DeliveryAddress();
-        deliveryAddress.setDaId(daId);
+        deliveryAddress.setId(daId);
         deliveryAddress.setUserId(userId);
         deliveryAddress.setContactName(request.getContactName());
         deliveryAddress.setContactSex(request.getContactSex());
@@ -72,6 +91,9 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
         return VoConverters.toDeliveryAddressVO(deliveryAddressMapper.findByIdForUser(userId, daId));
     }
 
+    /**
+     * 删除送货地址。
+     */
     @Override
     public void deleteDeliveryAddress(String userId, Integer daId) {
         ensureActiveUser(userId);
@@ -85,6 +107,9 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
         }
     }
 
+    /**
+     * 校验送货地址请求体。
+     */
     private void validateRequest(DeliveryAddressRequest request) {
         if (request == null) {
             throw ApiException.badRequest("body", "请求体不能为空");
@@ -98,6 +123,9 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
         ServiceValidator.requireMaxLength(request.getAddress(), "address", 100);
     }
 
+    /**
+     * 确认用户存在且处于正常状态。
+     */
     private void ensureActiveUser(String userId) {
         ServiceValidator.requireUserId(userId);
         if (userMapper.findActiveById(userId) == null) {

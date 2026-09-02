@@ -1,18 +1,34 @@
 package com.iteleme.backend.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+/**
+ * 商家实体，对应 `business` 表。
+ */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Business {
-    private Integer businessId;
-    private String businessName;
-    private String businessAddress;
-    private String businessExplain;
-    private String businessImg;
+    /** 商家编号。 */
+    private Integer id;
+    /** 商家名称。 */
+    private String name;
+    /** 商家地址。 */
+    private String address;
+    /** 商家介绍。 */
+    private String description;
+    /** 商家图片（base64）。 */
+    private String image;
+    /** 点餐分类编号。 */
     private Integer orderTypeId;
-    private BigDecimal starPrice;
+    /** 起送费。 */
+    private BigDecimal startPrice;
+    /** 配送费。 */
     private BigDecimal deliveryPrice;
-    private String remarks;
+    /** 备注信息。 */
+    private String remark;
 }

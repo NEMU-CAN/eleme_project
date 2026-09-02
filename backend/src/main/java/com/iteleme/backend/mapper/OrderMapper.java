@@ -9,38 +9,36 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
+/**
+ * 订单数据访问接口。
+ */
 @Mapper
 public interface OrderMapper {
-    @Select("""
-            <script>
-            SELECT orderId, userId, businessId, orderDate, orderTotal, daId, orderState
-            FROM orders
-            WHERE userId = #{userId}
-            <if test="businessId != null">
-                AND businessId = #{businessId}
-            </if>
-            <if test="orderState != null">
-                AND orderState = #{orderState}
-            </if>
-            ORDER BY orderId DESC
-            </script>
-            """)
+    /**
+     * 查询某个用户的订单列表，可按商家和状态筛选。
+     */
     List<Order> findByUserId(@Param("userId") String userId,
                              @Param("businessId") Integer businessId,
                              @Param("orderState") Integer orderState);
 
+    /**
+     * 根据用户和订单编号查询订单。
+     */
     @Select("""
-            SELECT orderId, userId, businessId, orderDate, orderTotal, daId, orderState
+            SELECT id, user_id, business_id, order_date, order_total, address_id, order_status
             FROM orders
-            WHERE userId = #{userId}
-              AND orderId = #{orderId}
+            WHERE user_id = #{userId}
+              AND id = #{orderId}
             """)
     Order findByIdForUser(@Param("userId") String userId, @Param("orderId") Integer orderId);
 
+    /**
+     * 新增订单。
+     */
     @Insert("""
-            INSERT INTO orders(userId, businessId, orderDate, orderTotal, daId, orderState)
-            VALUES (#{userId}, #{businessId}, #{orderDate}, #{orderTotal}, #{daId}, #{orderState})
+            INSERT INTO orders(user_id, business_id, order_date, order_total, address_id, order_status)
+            VALUES (#{userId}, #{businessId}, #{orderDate}, #{orderTotal}, #{addressId}, #{orderStatus})
             """)
-    @Options(useGeneratedKeys = true, keyProperty = "orderId")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Order order);
 }

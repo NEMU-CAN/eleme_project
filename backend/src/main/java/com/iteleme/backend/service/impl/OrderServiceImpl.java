@@ -19,6 +19,7 @@ import com.iteleme.backend.vo.OrderItemVO;
 import com.iteleme.backend.vo.OrderVO;
 import com.iteleme.backend.vo.request.OrderCreateRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,18 +29,38 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
+/**
+ * 订单业务实现。
+ */
 public class OrderServiceImpl implements OrderService {
+    /** 订单日期格式。 */
     private static final DateTimeFormatter ORDER_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private final OrderMapper orderMapper;
-    private final OrderDetailMapper orderDetailMapper;
-    private final CartMapper cartMapper;
-    private final UserMapper userMapper;
-    private final BusinessMapper businessMapper;
-    private final FoodMapper foodMapper;
-    private final DeliveryAddressMapper deliveryAddressMapper;
+    /** 订单表数据访问对象。 */
+    @Autowired
+    private OrderMapper orderMapper;
+    /** 订单明细表数据访问对象。 */
+    @Autowired
+    private OrderDetailMapper orderDetailMapper;
+    /** 购物车表数据访问对象。 */
+    @Autowired
+    private CartMapper cartMapper;
+    /** 用户表数据访问对象。 */
+    @Autowired
+    private UserMapper userMapper;
+    /** 商家表数据访问对象。 */
+    @Autowired
+    private BusinessMapper businessMapper;
+    /** 食品表数据访问对象。 */
+    @Autowired
+    private FoodMapper foodMapper;
+    /** 送货地址表数据访问对象。 */
+    @Autowired
+    private DeliveryAddressMapper deliveryAddressMapper;
 
+    /**
+     * 查询用户订单列表。
+     */
     @Override
     public List<OrderVO> listOrdersByUserId(String userId, Integer businessId, Integer orderState) {
         ensureActiveUser(userId);
@@ -50,6 +71,9 @@ public class OrderServiceImpl implements OrderService {
                 .toList();
     }
 
+    /**
+     * 创建订单。
+     */
     @Override
     @Transactional
     public OrderVO createOrder(String userId, OrderCreateRequest request) {
@@ -73,7 +97,7 @@ public class OrderServiceImpl implements OrderService {
             if (food == null) {
                 throw ApiException.notFound();
             }
-            orderTotal = orderTotal.add(food.getFoodPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+            orderTotal = orderTotal.add(food.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
         }
 
         Order order = new Order();
@@ -81,23 +105,26 @@ public class OrderServiceImpl implements OrderService {
         order.setBusinessId(request.getBusinessId());
         order.setOrderDate(LocalDateTime.now().format(ORDER_DATE_FORMATTER));
         order.setOrderTotal(orderTotal);
-        order.setDaId(request.getDaId());
-        order.setOrderState(0);
+        order.setAddressId(request.getDaId());
+        order.setOrderStatus(0);
         orderMapper.insert(order);
 
         for (Cart cartItem : cartItems) {
             OrderDetail orderDetail = new OrderDetail();
-            orderDetail.setOrderId(order.getOrderId());
+            orderDetail.setOrderId(order.getId());
             orderDetail.setFoodId(cartItem.getFoodId());
             orderDetail.setQuantity(cartItem.getQuantity());
             orderDetailMapper.insert(orderDetail);
         }
         cartMapper.deleteByFilter(userId, request.getBusinessId(), null);
 
-        Order created = orderMapper.findByIdForUser(userId, order.getOrderId());
+        Order created = orderMapper.findByIdForUser(userId, order.getId());
         return assembleOrder(created);
     }
 
+    /**
+     * 查询订单详情。
+     */
     @Override
     public OrderVO getOrderById(String userId, Integer orderId) {
         ensureActiveUser(userId);
@@ -109,6 +136,9 @@ public class OrderServiceImpl implements OrderService {
         return assembleOrder(order);
     }
 
+    /**
+     * 校验创建订单的请求体。
+     */
     private void validateCreateRequest(OrderCreateRequest request) {
         if (request == null) {
             throw ApiException.badRequest("body", "请求体不能为空");
@@ -117,17 +147,23 @@ public class OrderServiceImpl implements OrderService {
         ServiceValidator.requirePositive(request.getDaId(), "daId");
     }
 
+    /**
+     * 组装订单展示对象。
+     */
     private OrderVO assembleOrder(Order order) {
         Business business = businessMapper.findById(order.getBusinessId());
-        DeliveryAddress deliveryAddress = deliveryAddressMapper.findByIdForUser(order.getUserId(), order.getDaId());
+        DeliveryAddress deliveryAddress = deliveryAddressMapper.findByIdForUser(order.getUserId(), order.getAddressId());
         OrderVO vo = VoConverters.toOrderVO(order, business, deliveryAddress);
-        List<OrderItemVO> items = orderDetailMapper.findByOrderId(order.getOrderId()).stream()
+        List<OrderItemVO> items = orderDetailMapper.findByOrderId(order.getId()).stream()
                 .map(orderDetail -> VoConverters.toOrderItemVO(orderDetail, foodMapper.findById(orderDetail.getFoodId())))
                 .toList();
         vo.setItems(items);
         return vo;
     }
 
+    /**
+     * 确认用户存在且处于正常状态。
+     */
     private void ensureActiveUser(String userId) {
         ServiceValidator.requireUserId(userId);
         if (userMapper.findActiveById(userId) == null) {

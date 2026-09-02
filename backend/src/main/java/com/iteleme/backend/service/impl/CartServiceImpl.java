@@ -13,18 +13,32 @@ import com.iteleme.backend.vo.CartItemVO;
 import com.iteleme.backend.vo.request.CartCreateRequest;
 import com.iteleme.backend.vo.request.CartUpdateRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
+/**
+ * 购物车业务实现。
+ */
 public class CartServiceImpl implements CartService {
-    private final CartMapper cartMapper;
-    private final UserMapper userMapper;
-    private final BusinessMapper businessMapper;
-    private final FoodMapper foodMapper;
+    /** 购物车表数据访问对象。 */
+    @Autowired
+    private CartMapper cartMapper;
+    /** 用户表数据访问对象。 */
+    @Autowired
+    private UserMapper userMapper;
+    /** 商家表数据访问对象。 */
+    @Autowired
+    private BusinessMapper businessMapper;
+    /** 食品表数据访问对象。 */
+    @Autowired
+    private FoodMapper foodMapper;
 
+    /**
+     * 查询用户购物车列表。
+     */
     @Override
     public List<CartItemVO> listCartItems(String userId, Integer businessId) {
         ensureActiveUser(userId);
@@ -34,6 +48,9 @@ public class CartServiceImpl implements CartService {
                 .toList();
     }
 
+    /**
+     * 新增购物车条目；已存在相同食品时累加数量。
+     */
     @Override
     public CartItemVO upsertCartItem(String userId, CartCreateRequest request) {
         ensureActiveUser(userId);
@@ -48,8 +65,8 @@ public class CartServiceImpl implements CartService {
         int quantity = request.getQuantity() == null ? 1 : request.getQuantity();
         Cart existing = cartMapper.findExisting(userId, request.getBusinessId(), request.getFoodId());
         if (existing != null) {
-            cartMapper.increaseQuantity(existing.getCartId(), quantity);
-            Cart updated = cartMapper.findByIdForUser(userId, existing.getCartId());
+            cartMapper.increaseQuantity(existing.getId(), quantity);
+            Cart updated = cartMapper.findByIdForUser(userId, existing.getId());
             return VoConverters.toCartItemVO(updated, business, food);
         }
 
@@ -62,6 +79,9 @@ public class CartServiceImpl implements CartService {
         return VoConverters.toCartItemVO(cart, business, food);
     }
 
+    /**
+     * 修改用户购物车中指定条目的数量。
+     */
     @Override
     public CartItemVO updateCartItemQuantity(String userId, Integer cartId, CartUpdateRequest request) {
         ensureActiveUser(userId);
@@ -80,6 +100,9 @@ public class CartServiceImpl implements CartService {
         return assembleCartItem(updated);
     }
 
+    /**
+     * 按条件删除购物车条目。
+     */
     @Override
     public void deleteCartItemsByFilter(String userId, Integer businessId, Integer foodId) {
         ensureActiveUser(userId);
@@ -88,6 +111,9 @@ public class CartServiceImpl implements CartService {
         cartMapper.deleteByFilter(userId, businessId, foodId);
     }
 
+    /**
+     * 删除指定购物车条目。
+     */
     @Override
     public void deleteCartItem(String userId, Integer cartId) {
         ensureActiveUser(userId);
@@ -101,6 +127,9 @@ public class CartServiceImpl implements CartService {
         }
     }
 
+    /**
+     * 校验新增购物车条目的请求体。
+     */
     private void validateCreateRequest(CartCreateRequest request) {
         if (request == null) {
             throw ApiException.badRequest("body", "请求体不能为空");
@@ -112,12 +141,18 @@ public class CartServiceImpl implements CartService {
         }
     }
 
+    /**
+     * 组装购物车条目的商家和食品展示信息。
+     */
     private CartItemVO assembleCartItem(Cart cart) {
         Business business = businessMapper.findById(cart.getBusinessId());
         Food food = foodMapper.findById(cart.getFoodId());
         return VoConverters.toCartItemVO(cart, business, food);
     }
 
+    /**
+     * 确认用户存在且处于正常状态。
+     */
     private void ensureActiveUser(String userId) {
         ServiceValidator.requireUserId(userId);
         if (userMapper.findActiveById(userId) == null) {

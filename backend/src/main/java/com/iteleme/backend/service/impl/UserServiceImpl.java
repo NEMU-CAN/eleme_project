@@ -8,15 +8,23 @@ import com.iteleme.backend.vo.UserVO;
 import com.iteleme.backend.vo.request.LoginRequest;
 import com.iteleme.backend.vo.request.UserCreateRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 
 @Service
-@RequiredArgsConstructor
+/**
+ * 用户业务实现。
+ */
 public class UserServiceImpl implements UserService {
-    private final UserMapper userMapper;
+    /** 用户表数据访问对象。 */
+    @Autowired
+    private UserMapper userMapper;
 
+    /**
+     * 查询用户信息。
+     */
     @Override
     public UserVO getUserById(String userId) {
         ServiceValidator.requireUserId(userId);
@@ -27,6 +35,9 @@ public class UserServiceImpl implements UserService {
         return VoConverters.toUserVO(user);
     }
 
+    /**
+     * 注册用户。
+     */
     @Override
     public UserVO createUser(UserCreateRequest request) {
         validateCreateRequest(request);
@@ -35,16 +46,19 @@ public class UserServiceImpl implements UserService {
         }
 
         User user = new User();
-        user.setUserId(request.getUserId());
+        user.setId(request.getUserId());
         user.setPassword(request.getPassword());
-        user.setUserName(request.getUserName());
-        user.setUserSex(request.getUserSex());
-        user.setUserImg(request.getUserImg());
-        user.setDelTag(1);
+        user.setName(request.getUserName());
+        user.setSex(request.getUserSex());
+        user.setAvatar(request.getUserImg());
+        user.setDelFlag(1);
         userMapper.insert(user);
         return VoConverters.toUserVO(user);
     }
 
+    /**
+     * 用户登录。
+     */
     @Override
     public UserVO login(LoginRequest request) {
         if (request == null) {
@@ -55,7 +69,7 @@ public class UserServiceImpl implements UserService {
         ServiceValidator.requireMaxLength(request.getPassword(), "password", 20);
 
         User user = userMapper.findById(request.getUserId());
-        if (user == null || !Objects.equals(user.getDelTag(), 1)) {
+        if (user == null || !Objects.equals(user.getDelFlag(), 1)) {
             throw ApiException.notFound();
         }
         if (!Objects.equals(user.getPassword(), request.getPassword())) {
@@ -64,6 +78,9 @@ public class UserServiceImpl implements UserService {
         return VoConverters.toUserVO(user);
     }
 
+    /**
+     * 校验注册请求体。
+     */
     private void validateCreateRequest(UserCreateRequest request) {
         if (request == null) {
             throw ApiException.badRequest("body", "请求体不能为空");

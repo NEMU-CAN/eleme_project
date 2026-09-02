@@ -1,12 +1,24 @@
 package com.iteleme.backend.vo;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+/**
+ * 用户展示对象。
+ */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserVO {
-    private String userId;
-    private String userName;
-    private Integer userSex;
-    private String userImg;
-    private Integer delTag;
+    /** 用户编号。 */
+    private String id;
+    /** 用户名称。 */
+    private String name;
+    /** 用户性别。 */
+    private Integer sex;
+    /** 用户头像。 */
+    private String avatar;
+    /** 删除标记。 */
+    private Integer delFlag;
 }

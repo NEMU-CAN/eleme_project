@@ -1,9 +1,10 @@
 package com.iteleme.backend.controller;
 
+import com.iteleme.backend.entity.Result;
 import com.iteleme.backend.service.OrderService;
-import com.iteleme.backend.vo.OrderVO;
 import com.iteleme.backend.vo.request.OrderCreateRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,30 +17,43 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 订单接口。
+ */
 @RestController
 @RequestMapping("/api/users/{userId}/orders")
-@RequiredArgsConstructor
 public class OrderController {
-    private final OrderService orderService;
+    /** 订单业务服务。 */
+    @Autowired
+    private OrderService orderService;
 
+    /**
+     * 查询用户订单列表。
+     */
     @GetMapping
-    public List<OrderVO> listOrdersByUserId(@PathVariable("userId") String userId,
-                                            @RequestParam(value = "businessId", required = false) Integer businessId,
-                                            @RequestParam(value = "orderState", required = false) Integer orderState) {
-        return orderService.listOrdersByUserId(userId, businessId, orderState);
+    public Result listOrdersByUserId(@PathVariable("userId") String userId,
+                                     @RequestParam(value = "businessId", required = false) Integer businessId,
+                                     @RequestParam(value = "orderState", required = false) Integer orderState) {
+        return Result.success(orderService.listOrdersByUserId(userId, businessId, orderState));
     }
 
+    /**
+     * 创建订单。
+     */
     @PostMapping
-    public ResponseEntity<OrderVO> createOrder(@PathVariable("userId") String userId,
-                                               @RequestBody OrderCreateRequest request) {
+    public ResponseEntity<Result> createOrder(@PathVariable("userId") String userId,
+                                              @RequestBody OrderCreateRequest request) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(orderService.createOrder(userId, request));
+                .body(Result.success(orderService.createOrder(userId, request)));
     }
 
+    /**
+     * 查询订单详情。
+     */
     @GetMapping("/{orderId}")
-    public OrderVO getOrderById(@PathVariable("userId") String userId,
-                                @PathVariable("orderId") Integer orderId) {
-        return orderService.getOrderById(userId, orderId);
+    public Result getOrderById(@PathVariable("userId") String userId,
+                               @PathVariable("orderId") Integer orderId) {
+        return Result.success(orderService.getOrderById(userId, orderId));
     }
 }

@@ -15,45 +15,57 @@ import com.iteleme.backend.vo.OrderItemVO;
 import com.iteleme.backend.vo.OrderVO;
 import com.iteleme.backend.vo.UserVO;
 
+/**
+ * 实体与 VO 的转换工具类。
+ */
 final class VoConverters {
     private VoConverters() {
     }
 
+    /**
+     * 将商家实体转换为对外展示对象。
+     */
     static BusinessVO toBusinessVO(Business business) {
         if (business == null) {
             return null;
         }
         BusinessVO vo = new BusinessVO();
-        vo.setBusinessId(business.getBusinessId());
-        vo.setBusinessName(business.getBusinessName());
-        vo.setBusinessAddress(business.getBusinessAddress());
-        vo.setBusinessExplain(business.getBusinessExplain());
-        vo.setBusinessImg(business.getBusinessImg());
+        vo.setId(business.getId());
+        vo.setName(business.getName());
+        vo.setAddress(business.getAddress());
+        vo.setDescription(business.getDescription());
+        vo.setImage(business.getImage());
         vo.setOrderTypeId(business.getOrderTypeId());
-        vo.setStarPrice(business.getStarPrice());
+        vo.setStartPrice(business.getStartPrice());
         vo.setDeliveryPrice(business.getDeliveryPrice());
-        vo.setRemarks(business.getRemarks());
+        vo.setRemark(business.getRemark());
         return vo;
     }
 
+    /**
+     * 将食品实体转换为对外展示对象。
+     */
     static FoodVO toFoodVO(Food food) {
         if (food == null) {
             return null;
         }
         FoodVO vo = new FoodVO();
-        vo.setFoodId(food.getFoodId());
-        vo.setFoodName(food.getFoodName());
-        vo.setFoodExplain(food.getFoodExplain());
-        vo.setFoodImg(food.getFoodImg());
-        vo.setFoodPrice(food.getFoodPrice());
+        vo.setId(food.getId());
+        vo.setName(food.getName());
+        vo.setDescription(food.getDescription());
+        vo.setImage(food.getImage());
+        vo.setPrice(food.getPrice());
         vo.setBusinessId(food.getBusinessId());
-        vo.setRemarks(food.getRemarks());
+        vo.setRemark(food.getRemark());
         return vo;
     }
 
+    /**
+     * 将购物车实体和关联信息转换为对外展示对象。
+     */
     static CartItemVO toCartItemVO(Cart cart, Business business, Food food) {
         CartItemVO vo = new CartItemVO();
-        vo.setCartId(cart.getCartId());
+        vo.setId(cart.getId());
         vo.setUserId(cart.getUserId());
         vo.setBusinessId(cart.getBusinessId());
         vo.setFoodId(cart.getFoodId());
@@ -63,12 +75,15 @@ final class VoConverters {
         return vo;
     }
 
+    /**
+     * 将送货地址实体转换为对外展示对象。
+     */
     static DeliveryAddressVO toDeliveryAddressVO(DeliveryAddress deliveryAddress) {
         if (deliveryAddress == null) {
             return null;
         }
         DeliveryAddressVO vo = new DeliveryAddressVO();
-        vo.setDaId(deliveryAddress.getDaId());
+        vo.setId(deliveryAddress.getId());
         vo.setContactName(deliveryAddress.getContactName());
         vo.setContactSex(deliveryAddress.getContactSex());
         vo.setContactTel(deliveryAddress.getContactTel());
@@ -77,9 +92,12 @@ final class VoConverters {
         return vo;
     }
 
+    /**
+     * 将订单明细实体转换为对外展示对象。
+     */
     static OrderItemVO toOrderItemVO(OrderDetail orderDetail, Food food) {
         OrderItemVO vo = new OrderItemVO();
-        vo.setOdId(orderDetail.getOdId());
+        vo.setId(orderDetail.getId());
         vo.setOrderId(orderDetail.getOrderId());
         vo.setFoodId(orderDetail.getFoodId());
         vo.setQuantity(orderDetail.getQuantity());
@@ -87,30 +105,36 @@ final class VoConverters {
         return vo;
     }
 
+    /**
+     * 将订单实体和关联信息转换为对外展示对象。
+     */
     static OrderVO toOrderVO(Order order, Business business, DeliveryAddress deliveryAddress) {
         OrderVO vo = new OrderVO();
-        vo.setOrderId(order.getOrderId());
+        vo.setId(order.getId());
         vo.setUserId(order.getUserId());
         vo.setBusinessId(order.getBusinessId());
         vo.setOrderDate(order.getOrderDate());
         vo.setOrderTotal(order.getOrderTotal());
-        vo.setDaId(order.getDaId());
-        vo.setOrderState(order.getOrderState());
+        vo.setAddressId(order.getAddressId());
+        vo.setOrderStatus(order.getOrderStatus());
         vo.setBusiness(toBusinessVO(business));
         vo.setDeliveryAddress(toDeliveryAddressVO(deliveryAddress));
         return vo;
     }
 
+    /**
+     * 将用户实体转换为对外展示对象。
+     */
     static UserVO toUserVO(User user) {
         if (user == null) {
             return null;
         }
         UserVO vo = new UserVO();
-        vo.setUserId(user.getUserId());
-        vo.setUserName(user.getUserName());
-        vo.setUserSex(user.getUserSex());
-        vo.setUserImg(user.getUserImg());
-        vo.setDelTag(user.getDelTag());
+        vo.setId(user.getId());
+        vo.setName(user.getName());
+        vo.setSex(user.getSex());
+        vo.setAvatar(user.getAvatar());
+        vo.setDelFlag(user.getDelFlag());
         return vo;
     }
 }

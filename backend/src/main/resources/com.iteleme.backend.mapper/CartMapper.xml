@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iteleme.backend.mapper.CartMapper">
+
+    <select id="findByUserId" resultType="com.iteleme.backend.entity.Cart">
+        SELECT id, food_id, business_id, user_id, quantity
+        FROM cart
+        WHERE user_id = #{userId}
+        <if test="businessId != null">
+            AND business_id = #{businessId}
+        </if>
+        ORDER BY id
+    </select>
+
+    <delete id="deleteByFilter">
+        DELETE FROM cart
+        WHERE user_id = #{userId}
+        <if test="businessId != null">
+            AND business_id = #{businessId}
+        </if>
+        <if test="foodId != null">
+            AND food_id = #{foodId}
+        </if>
+    </delete>
+</mapper>

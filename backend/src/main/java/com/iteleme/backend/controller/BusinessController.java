@@ -1,35 +1,42 @@
 package com.iteleme.backend.controller;
 
+import com.iteleme.backend.entity.Result;
 import com.iteleme.backend.service.BusinessService;
-import com.iteleme.backend.vo.BusinessVO;
-import com.iteleme.backend.vo.FoodVO;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/businesses")
-@RequiredArgsConstructor
 public class BusinessController {
-    private final BusinessService businessService;
 
+    @Autowired
+    private BusinessService businessService;
+
+    /**
+     * 查询商家列表
+     */
     @GetMapping
-    public List<BusinessVO> listBusinesses(@RequestParam(value = "orderTypeId", required = false) Integer orderTypeId) {
-        return businessService.listBusinesses(orderTypeId);
+    public Result listBusinesses(@RequestParam(required = false) Integer orderTypeId) {
+        return Result.success(businessService.listBusinesses(orderTypeId));
     }
 
+    /**
+     * 查询商家详情。
+     */
     @GetMapping("/{businessId}")
-    public BusinessVO getBusinessById(@PathVariable("businessId") Integer businessId) {
-        return businessService.getBusinessById(businessId);
+    public Result getBusinessById(@PathVariable("businessId") Integer businessId) {
+        return Result.success(businessService.getBusinessById(businessId));
     }
 
+    /**
+     * 查询商家食品列表。
+     */
     @GetMapping("/{businessId}/foods")
-    public List<FoodVO> listFoodsByBusinessId(@PathVariable("businessId") Integer businessId) {
-        return businessService.listFoodsByBusinessId(businessId);
+    public Result listFoodsByBusinessId(@PathVariable("businessId") Integer businessId) {
+        return Result.success(businessService.listFoodsByBusinessId(businessId));
     }
 }
