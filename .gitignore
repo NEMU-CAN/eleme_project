@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local Maven helpers ###
+MAVEN.md
+mvnw.ps1
