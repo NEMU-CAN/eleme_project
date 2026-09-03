@@ -1,0 +1,1546 @@
+openapi: 3.0.1
+info:
+  title: 饿了么点餐系统 RESTful 接口文档
+  description: 统一请求前缀为 /api，接口响应统一使用 Result 包装。成功响应 code=1，msg=success，data 为实际业务数据。
+  version: 1.0.0
+tags:
+- name: 商家
+- name: 购物车
+- name: 地址
+- name: 订单
+- name: 用户
+paths:
+  /api/businesses:
+    get:
+      summary: 查询商家列表
+      description: 按点餐分类过滤商家，`orderTypeId` 可选。
+      operationId: listBusinesses
+      tags:
+      - 商家
+      parameters:
+      - $ref: '#/components/parameters/OrderTypeIdQuery'
+      responses:
+        '200':
+          description: 商家列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/BusinessVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                - id: 10001
+                  name: 万家饺子（软件园E18店）
+                  address: 沈阳市浑南区软件园E18楼
+                  description: 各种饺子
+                  image: data:image/png;base64,...
+                  orderTypeId: 1
+                  startPrice: 15
+                  deliveryPrice: 3
+                  remark: 新店开业
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security: []
+  /api/businesses/{businessId}:
+    get:
+      summary: 获取商家详情
+      description: 根据商家编号获取商家完整信息。
+      operationId: getBusinessById
+      tags:
+      - 商家
+      parameters:
+      - $ref: '#/components/parameters/BusinessIdPath'
+      responses:
+        '200':
+          description: 商家详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/BusinessVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                  id: 10001
+                  name: 万家饺子（软件园E18店）
+                  address: 沈阳市浑南区软件园E18楼
+                  description: 各种饺子
+                  image: data:image/png;base64,...
+                  orderTypeId: 1
+                  startPrice: 15
+                  deliveryPrice: 3
+                  remark: 新店开业
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+  /api/businesses/{businessId}/foods:
+    get:
+      summary: 查询商家食品列表
+      description: 查询某个商家下的食品列表。
+      operationId: listFoodsByBusinessId
+      tags:
+      - 商家
+      parameters:
+      - $ref: '#/components/parameters/BusinessIdPath'
+      responses:
+        '200':
+          description: 食品列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/FoodVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                - id: 1
+                  name: 纯肉鲜肉水饺
+                  description: 新鲜现包
+                  image: data:image/png;base64,...
+                  price: 18
+                  businessId: 10001
+                  remark: 招牌
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+  /api/users/{userId}/cart-items:
+    get:
+      summary: 查询用户购物车
+      description: 查询某个用户的购物车，`businessId` 可选。
+      operationId: listUserCartItems
+      tags:
+      - 购物车
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      - $ref: '#/components/parameters/BusinessIdQuery'
+      responses:
+        '200':
+          description: 购物车条目列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/CartItemVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                - id: 20001
+                  userId: u10001
+                  businessId: 10001
+                  foodId: 1
+                  quantity: 2
+                  business:
+                    id: 10001
+                    name: 万家饺子（软件园E18店）
+                    address: 沈阳市浑南区软件园E18楼
+                    description: 各种饺子
+                    image: data:image/png;base64,...
+                    orderTypeId: 1
+                    startPrice: 15
+                    deliveryPrice: 3
+                    remark: 新店开业
+                  food:
+                    id: 1
+                    name: 纯肉鲜肉水饺
+                    description: 新鲜现包
+                    image: data:image/png;base64,...
+                    price: 18
+                    businessId: 10001
+                    remark: 招牌
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+    post:
+      summary: 加入购物车
+      description: 将食品加入购物车；同一用户、商家和食品已存在时会累加数量。
+      operationId: upsertCartItem
+      tags:
+      - 购物车
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartCreateRequest'
+            example:
+              businessId: 10001
+              foodId: 1
+              quantity: 2
+      responses:
+        '200':
+          description: 当前购物车条目
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/CartItemVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                  id: 20001
+                  userId: u10001
+                  businessId: 10001
+                  foodId: 1
+                  quantity: 2
+                  business:
+                    id: 10001
+                    name: 万家饺子（软件园E18店）
+                    address: 沈阳市浑南区软件园E18楼
+                    description: 各种饺子
+                    image: data:image/png;base64,...
+                    orderTypeId: 1
+                    startPrice: 15
+                    deliveryPrice: 3
+                    remark: 新店开业
+                  food:
+                    id: 1
+                    name: 纯肉鲜肉水饺
+                    description: 新鲜现包
+                    image: data:image/png;base64,...
+                    price: 18
+                    businessId: 10001
+                    remark: 招牌
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+    delete:
+      summary: 按条件删除购物车
+      description: 按用户维度批量删除购物车条目。
+      operationId: deleteCartItemsByFilter
+      tags:
+      - 购物车
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      - $ref: '#/components/parameters/BusinessIdQuery'
+      - $ref: '#/components/parameters/FoodIdQuery'
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+              example:
+                code: 1
+                msg: success
+                data: null
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+  /api/users/{userId}/cart-items/{cartId}:
+    patch:
+      summary: 更新购物车数量
+      description: 根据购物车编号更新数量。
+      operationId: updateCartItemQuantity
+      tags:
+      - 购物车
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      - $ref: '#/components/parameters/CartIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartUpdateRequest'
+            example:
+              quantity: 3
+      responses:
+        '200':
+          description: 更新后的购物车条目
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/CartItemVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                  id: 20001
+                  userId: u10001
+                  businessId: 10001
+                  foodId: 1
+                  quantity: 3
+                  business:
+                    id: 10001
+                    name: 万家饺子（软件园E18店）
+                    address: 沈阳市浑南区软件园E18楼
+                    description: 各种饺子
+                    image: data:image/png;base64,...
+                    orderTypeId: 1
+                    startPrice: 15
+                    deliveryPrice: 3
+                    remark: 新店开业
+                  food:
+                    id: 1
+                    name: 纯肉鲜肉水饺
+                    description: 新鲜现包
+                    image: data:image/png;base64,...
+                    price: 18
+                    businessId: 10001
+                    remark: 招牌
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+    delete:
+      summary: 删除单条购物车记录
+      description: 删除指定购物车条目。
+      operationId: deleteCartItem
+      tags:
+      - 购物车
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      - $ref: '#/components/parameters/CartIdPath'
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+              example:
+                code: 1
+                msg: success
+                data: null
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+  /api/users/{userId}/delivery-addresses:
+    get:
+      summary: 查询用户收货地址
+      description: 查询某个用户的全部收货地址。
+      operationId: listDeliveryAddressesByUserId
+      tags:
+      - 地址
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      responses:
+        '200':
+          description: 收货地址列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/DeliveryAddressVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                - id: 30001
+                  contactName: 张三
+                  contactSex: 1
+                  contactTel: '13800001234'
+                  address: 天津市南开区复康路1号
+                  userId: u10001
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+    post:
+      summary: 新增收货地址
+      description: 为指定用户新增一条收货地址。
+      operationId: createDeliveryAddress
+      tags:
+      - 地址
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryAddressRequest'
+            example:
+              contactName: 张三
+              contactSex: 1
+              contactTel: '13800001234'
+              address: 天津市南开区复康路1号
+      responses:
+        '201':
+          description: 新建的收货地址
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/DeliveryAddressVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                  id: 30001
+                  contactName: 张三
+                  contactSex: 1
+                  contactTel: '13800001234'
+                  address: 天津市南开区复康路1号
+                  userId: u10001
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+  /api/users/{userId}/delivery-addresses/{daId}:
+    get:
+      summary: 获取收货地址详情
+      description: 根据地址编号获取详情。
+      operationId: getDeliveryAddressById
+      tags:
+      - 地址
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      - $ref: '#/components/parameters/DaIdPath'
+      responses:
+        '200':
+          description: 收货地址详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/DeliveryAddressVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                  id: 30001
+                  contactName: 张三
+                  contactSex: 1
+                  contactTel: '13800001234'
+                  address: 天津市南开区复康路1号
+                  userId: u10001
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+    put:
+      summary: 更新收货地址
+      description: 全量更新一条收货地址。
+      operationId: updateDeliveryAddress
+      tags:
+      - 地址
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      - $ref: '#/components/parameters/DaIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryAddressRequest'
+            example:
+              contactName: 张三
+              contactSex: 1
+              contactTel: '13800009999'
+              address: 天津市南开区复康路2号
+      responses:
+        '200':
+          description: 更新后的收货地址
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/DeliveryAddressVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                  id: 30001
+                  contactName: 张三
+                  contactSex: 1
+                  contactTel: '13800009999'
+                  address: 天津市南开区复康路2号
+                  userId: u10001
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+    delete:
+      summary: 删除收货地址
+      description: 删除指定收货地址。
+      operationId: deleteDeliveryAddress
+      tags:
+      - 地址
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      - $ref: '#/components/parameters/DaIdPath'
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+              example:
+                code: 1
+                msg: success
+                data: null
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+  /api/users/{userId}/orders:
+    get:
+      summary: 查询用户订单列表
+      description: 查询某个用户的全部订单，支持按商家和状态过滤。
+      operationId: listOrdersByUserId
+      tags:
+      - 订单
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      - $ref: '#/components/parameters/BusinessIdQuery'
+      - $ref: '#/components/parameters/OrderStateQuery'
+      responses:
+        '200':
+          description: 订单列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/OrderVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                - id: 40001
+                  userId: u10001
+                  businessId: 10001
+                  orderDate: '2026-09-01 13:00:00'
+                  orderTotal: 36
+                  addressId: 30001
+                  orderStatus: 0
+                  business:
+                    id: 10001
+                    name: 万家饺子（软件园E18店）
+                    address: 沈阳市浑南区软件园E18楼
+                    description: 各种饺子
+                    image: data:image/png;base64,...
+                    orderTypeId: 1
+                    startPrice: 15
+                    deliveryPrice: 3
+                    remark: 新店开业
+                  deliveryAddress:
+                    id: 30001
+                    contactName: 张三
+                    contactSex: 1
+                    contactTel: '13800001234'
+                    address: 天津市南开区复康路1号
+                    userId: u10001
+                  items:
+                  - id: 50001
+                    orderId: 40001
+                    foodId: 1
+                    quantity: 2
+                    food:
+                      id: 1
+                      name: 纯肉鲜肉水饺
+                      description: 新鲜现包
+                      image: data:image/png;base64,...
+                      price: 18
+                      businessId: 10001
+                      remark: 招牌
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+    post:
+      summary: 创建订单
+      description: 从用户购物车中按商家创建订单，订单总价由服务端计算。
+      operationId: createOrder
+      tags:
+      - 订单
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+            example:
+              businessId: 10001
+              daId: 30001
+      responses:
+        '201':
+          description: 新建的订单
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/OrderVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                  id: 40001
+                  userId: u10001
+                  businessId: 10001
+                  orderDate: '2026-09-01 13:00:00'
+                  orderTotal: 36
+                  addressId: 30001
+                  orderStatus: 0
+                  business:
+                    id: 10001
+                    name: 万家饺子（软件园E18店）
+                    address: 沈阳市浑南区软件园E18楼
+                    description: 各种饺子
+                    image: data:image/png;base64,...
+                    orderTypeId: 1
+                    startPrice: 15
+                    deliveryPrice: 3
+                    remark: 新店开业
+                  deliveryAddress:
+                    id: 30001
+                    contactName: 张三
+                    contactSex: 1
+                    contactTel: '13800001234'
+                    address: 天津市南开区复康路1号
+                    userId: u10001
+                  items:
+                  - id: 50001
+                    orderId: 40001
+                    foodId: 1
+                    quantity: 2
+                    food:
+                      id: 1
+                      name: 纯肉鲜肉水饺
+                      description: 新鲜现包
+                      image: data:image/png;base64,...
+                      price: 18
+                      businessId: 10001
+                      remark: 招牌
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      security: []
+  /api/users/{userId}/orders/{orderId}:
+    get:
+      summary: 获取订单详情
+      description: 根据订单编号获取完整订单信息。
+      operationId: getOrderById
+      tags:
+      - 订单
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      - $ref: '#/components/parameters/OrderIdPath'
+      responses:
+        '200':
+          description: 订单详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/OrderVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                  id: 40001
+                  userId: u10001
+                  businessId: 10001
+                  orderDate: '2026-09-01 13:00:00'
+                  orderTotal: 36
+                  addressId: 30001
+                  orderStatus: 0
+                  business:
+                    id: 10001
+                    name: 万家饺子（软件园E18店）
+                    address: 沈阳市浑南区软件园E18楼
+                    description: 各种饺子
+                    image: data:image/png;base64,...
+                    orderTypeId: 1
+                    startPrice: 15
+                    deliveryPrice: 3
+                    remark: 新店开业
+                  deliveryAddress:
+                    id: 30001
+                    contactName: 张三
+                    contactSex: 1
+                    contactTel: '13800001234'
+                    address: 天津市南开区复康路1号
+                    userId: u10001
+                  items:
+                  - id: 50001
+                    orderId: 40001
+                    foodId: 1
+                    quantity: 2
+                    food:
+                      id: 1
+                      name: 纯肉鲜肉水饺
+                      description: 新鲜现包
+                      image: data:image/png;base64,...
+                      price: 18
+                      businessId: 10001
+                      remark: 招牌
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+  /api/users/{userId}:
+    get:
+      summary: 获取用户信息
+      description: 根据用户编号查询用户资料。
+      operationId: getUserById
+      tags:
+      - 用户
+      parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+      responses:
+        '200':
+          description: 用户资料
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/UserVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                  id: u10001
+                  name: 刘晨
+                  sex: 1
+                  avatar: data:image/png;base64,...
+                  delFlag: 1
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+  /api/users:
+    post:
+      summary: 用户注册
+      description: 创建新用户。
+      operationId: createUser
+      tags:
+      - 用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+            example:
+              userId: u10001
+              password: pass@123456
+              userName: 刘晨
+              userSex: 1
+              userImg: data:image/png;base64,...
+      responses:
+        '201':
+          description: 新建用户
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/UserVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                  id: u10001
+                  name: 刘晨
+                  sex: 1
+                  avatar: data:image/png;base64,...
+                  delFlag: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      security: []
+  /api/sessions:
+    post:
+      summary: 用户登录
+      description: 根据用户编号和密码创建登录会话。
+      operationId: createSession
+      tags:
+      - 用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              userId: u10001
+              password: pass@123456
+      responses:
+        '200':
+          description: 登录成功后的用户资料
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Result'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/UserVO'
+              example:
+                code: 1
+                msg: success
+                data:
+                  id: u10001
+                  name: 刘晨
+                  sex: 1
+                  avatar: data:image/png;base64,...
+                  delFlag: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security: []
+components:
+  schemas:
+    Result:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 业务状态码，1 表示成功，其余值表示失败或异常类型。
+        msg:
+          type: string
+          description: 响应提示信息。
+        data:
+          nullable: true
+          description: 响应主体数据。
+      required:
+      - code
+      - msg
+      - data
+      description: 统一接口响应体。
+    ErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+          description: 字段名。
+        reason:
+          type: string
+          description: 错误原因。
+      required:
+      - field
+      - reason
+      description: 字段级错误明细。
+    BusinessVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: 商家编号。
+        name:
+          type: string
+          maxLength: 40
+          description: 商家名称。
+        address:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: 商家地址。
+        description:
+          type: string
+          maxLength: 40
+          nullable: true
+          description: 商家介绍。
+        image:
+          type: string
+          description: 商家图片。
+        orderTypeId:
+          type: integer
+          format: int32
+          description: 点餐分类编号。
+        startPrice:
+          type: number
+          description: 起送费。
+        deliveryPrice:
+          type: number
+          description: 配送费。
+        remark:
+          type: string
+          maxLength: 40
+          nullable: true
+          description: 备注信息。
+      required:
+      - id
+      - name
+      - image
+      - orderTypeId
+      - startPrice
+      - deliveryPrice
+      description: 商家展示对象。
+    FoodVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: 食品编号。
+        name:
+          type: string
+          maxLength: 30
+          description: 食品名称。
+        description:
+          type: string
+          maxLength: 30
+          nullable: true
+          description: 食品介绍。
+        image:
+          type: string
+          description: 食品图片。
+        price:
+          type: number
+          description: 食品价格。
+        businessId:
+          type: integer
+          format: int32
+          description: 所属商家编号。
+        remark:
+          type: string
+          maxLength: 40
+          nullable: true
+          description: 备注信息。
+      required:
+      - id
+      - name
+      - image
+      - price
+      - businessId
+      description: 食品展示对象。
+    CartItemVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: 购物车编号。
+        userId:
+          type: string
+          maxLength: 20
+          description: 用户编号。
+        businessId:
+          type: integer
+          format: int32
+          description: 商家编号。
+        foodId:
+          type: integer
+          format: int32
+          description: 食品编号。
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 数量。
+        business:
+          $ref: '#/components/schemas/BusinessVO'
+        food:
+          $ref: '#/components/schemas/FoodVO'
+      required:
+      - id
+      - userId
+      - businessId
+      - foodId
+      - quantity
+      - business
+      - food
+      description: 购物车展示对象。
+    DeliveryAddressVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: 送货地址编号。
+        contactName:
+          type: string
+          maxLength: 20
+          description: 联系人姓名。
+        contactSex:
+          type: integer
+          format: int32
+          enum:
+          - 0
+          - 1
+          description: 联系人性别，0=女，1=男。
+        contactTel:
+          type: string
+          maxLength: 20
+          description: 联系人电话。
+        address:
+          type: string
+          maxLength: 100
+          description: 详细送货地址。
+        userId:
+          type: string
+          maxLength: 20
+          description: 所属用户编号。
+      required:
+      - id
+      - contactName
+      - contactSex
+      - contactTel
+      - address
+      - userId
+      description: 送货地址展示对象。
+    OrderItemVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: 订单明细编号。
+        orderId:
+          type: integer
+          format: int32
+          description: 所属订单编号。
+        foodId:
+          type: integer
+          format: int32
+          description: 食品编号。
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 数量。
+        food:
+          $ref: '#/components/schemas/FoodVO'
+      required:
+      - id
+      - orderId
+      - foodId
+      - quantity
+      - food
+      description: 订单明细展示对象。
+    OrderVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: 订单编号。
+        userId:
+          type: string
+          maxLength: 20
+          description: 用户编号。
+        businessId:
+          type: integer
+          format: int32
+          description: 商家编号。
+        orderDate:
+          type: string
+          description: 订购日期，格式 yyyy-MM-dd HH:mm:ss。
+        orderTotal:
+          type: number
+          description: 订单总价。
+        addressId:
+          type: integer
+          format: int32
+          description: 送货地址编号。
+        orderStatus:
+          type: integer
+          format: int32
+          enum:
+          - 0
+          - 1
+          description: 订单状态，0=未支付，1=已支付。
+        business:
+          $ref: '#/components/schemas/BusinessVO'
+        deliveryAddress:
+          $ref: '#/components/schemas/DeliveryAddressVO'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemVO'
+          description: 订单明细列表。
+      required:
+      - id
+      - userId
+      - businessId
+      - orderDate
+      - orderTotal
+      - addressId
+      - orderStatus
+      - business
+      - deliveryAddress
+      - items
+      description: 订单展示对象。
+    UserVO:
+      type: object
+      properties:
+        id:
+          type: string
+          maxLength: 20
+          description: 用户编号。
+        name:
+          type: string
+          maxLength: 20
+          description: 用户名称。
+        sex:
+          type: integer
+          format: int32
+          enum:
+          - 0
+          - 1
+          description: 用户性别，0=女，1=男。
+        avatar:
+          type: string
+          nullable: true
+          description: 用户头像。
+        delFlag:
+          type: integer
+          format: int32
+          enum:
+          - 0
+          - 1
+          description: 删除标记，1=正常，0=删除。
+      required:
+      - id
+      - name
+      - sex
+      - delFlag
+      description: 用户展示对象。
+    LoginRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+          maxLength: 20
+          description: 用户编号。
+        password:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: 密码。
+      required:
+      - userId
+      - password
+      description: 登录请求体。
+    UserCreateRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+          maxLength: 20
+          description: 用户编号。
+        password:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: 密码。
+        userName:
+          type: string
+          maxLength: 20
+          description: 用户名称。
+        userSex:
+          type: integer
+          format: int32
+          enum:
+          - 0
+          - 1
+          description: 用户性别，0=女，1=男。
+        userImg:
+          type: string
+          nullable: true
+          description: 用户头像。
+      required:
+      - userId
+      - password
+      - userName
+      - userSex
+      description: 用户注册请求体。
+    CartCreateRequest:
+      type: object
+      properties:
+        businessId:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 商家编号。
+        foodId:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 食品编号。
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+          default: 1
+          description: 数量，不传时默认 1。
+      required:
+      - businessId
+      - foodId
+      description: 加入购物车请求体。
+    CartUpdateRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 新数量。
+      required:
+      - quantity
+      description: 修改购物车数量请求体。
+    DeliveryAddressRequest:
+      type: object
+      properties:
+        contactName:
+          type: string
+          maxLength: 20
+          description: 联系人姓名。
+        contactSex:
+          type: integer
+          format: int32
+          enum:
+          - 0
+          - 1
+          description: 联系人性别，0=女，1=男。
+        contactTel:
+          type: string
+          maxLength: 20
+          description: 联系人电话。
+        address:
+          type: string
+          maxLength: 100
+          description: 详细送货地址。
+      required:
+      - contactName
+      - contactSex
+      - contactTel
+      - address
+      description: 收货地址请求体。
+    OrderCreateRequest:
+      type: object
+      properties:
+        businessId:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 商家编号。
+        daId:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 收货地址编号。
+      required:
+      - businessId
+      - daId
+      description: 创建订单请求体。
+    ResultBusinessVOList:
+      allOf:
+      - $ref: '#/components/schemas/Result'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              $ref: '#/components/schemas/BusinessVO'
+    ResultBusinessVO:
+      allOf:
+      - $ref: '#/components/schemas/Result'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/BusinessVO'
+    ResultFoodVOList:
+      allOf:
+      - $ref: '#/components/schemas/Result'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              $ref: '#/components/schemas/FoodVO'
+    ResultCartItemVOList:
+      allOf:
+      - $ref: '#/components/schemas/Result'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              $ref: '#/components/schemas/CartItemVO'
+    ResultCartItemVO:
+      allOf:
+      - $ref: '#/components/schemas/Result'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/CartItemVO'
+    ResultDeliveryAddressVOList:
+      allOf:
+      - $ref: '#/components/schemas/Result'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              $ref: '#/components/schemas/DeliveryAddressVO'
+    ResultDeliveryAddressVO:
+      allOf:
+      - $ref: '#/components/schemas/Result'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/DeliveryAddressVO'
+    ResultOrderVOList:
+      allOf:
+      - $ref: '#/components/schemas/Result'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              $ref: '#/components/schemas/OrderVO'
+    ResultOrderVO:
+      allOf:
+      - $ref: '#/components/schemas/Result'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/OrderVO'
+    ResultUserVO:
+      allOf:
+      - $ref: '#/components/schemas/Result'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/UserVO'
+    ResultErrorDetailList:
+      allOf:
+      - $ref: '#/components/schemas/Result'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              $ref: '#/components/schemas/ErrorDetail'
+  responses:
+    BadRequest:
+      description: 参数校验失败
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResultErrorDetailList'
+          example:
+            code: 40001
+            msg: 参数校验失败
+            data:
+            - field: quantity
+              reason: 必须大于 0
+    Unauthorized:
+      description: 登录失败
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Result'
+          example:
+            code: 40101
+            msg: 账号或密码错误
+            data: null
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Result'
+          example:
+            code: 40401
+            msg: 资源不存在
+            data: null
+    Conflict:
+      description: 业务冲突
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResultErrorDetailList'
+          example:
+            code: 40901
+            msg: 业务状态冲突
+            data:
+            - field: cart
+              reason: 购物车为空，无法创建订单
+  parameters:
+    UserIdPath:
+      name: userId
+      in: path
+      required: true
+      description: 用户编号
+      schema:
+        type: string
+        maxLength: 20
+      example: u10001
+    BusinessIdPath:
+      name: businessId
+      in: path
+      required: true
+      description: 商家编号
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      example: 10001
+    CartIdPath:
+      name: cartId
+      in: path
+      required: true
+      description: 购物车编号
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      example: 20001
+    DaIdPath:
+      name: daId
+      in: path
+      required: true
+      description: 收货地址编号
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      example: 30001
+    OrderIdPath:
+      name: orderId
+      in: path
+      required: true
+      description: 订单编号
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      example: 40001
+    OrderTypeIdQuery:
+      name: orderTypeId
+      in: query
+      required: false
+      description: 点餐分类编号
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      example: 1
+    BusinessIdQuery:
+      name: businessId
+      in: query
+      required: false
+      description: 商家编号
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      example: 10001
+    FoodIdQuery:
+      name: foodId
+      in: query
+      required: false
+      description: 食品编号
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      example: 1
+    OrderStateQuery:
+      name: orderState
+      in: query
+      required: false
+      description: 订单状态，0=未支付，1=已支付
+      schema:
+        type: integer
+        format: int32
+        enum:
+        - 0
+        - 1
+      example: 0
+  securitySchemes: {}
