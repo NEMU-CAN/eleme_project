@@ -10,37 +10,34 @@ import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
-/**
- * 订单数据访问接口。
- */
+/** 订单数据访问接口。 */
 @Mapper
 public interface OrderMapper {
-    /**
-     * 查询某个用户的订单列表，可按商家和状态筛选。
-     */
+    /** 查询某个用户的订单列表，可按商家和状态筛选。 */
     List<Order> findByUserId(@Param("userId") String userId,
                              @Param("businessId") Integer businessId,
                              @Param("orderState") Integer orderState);
 
-    /**
-     * 根据用户和订单编号查询订单。
-     */
+    /** 根据用户和订单编号查询订单。 */
     @Select("""
-            SELECT id, user_id, business_id, order_date, order_total, address_id, order_status
+            SELECT id,
+                   user_id AS userId,
+                   business_id AS businessId,
+                   order_date AS orderDate,
+                   order_total AS orderTotal,
+                   address_id AS addressId,
+                   order_status AS orderStatus
             FROM orders
-            WHERE user_id = #{userId}
-              AND id = #{orderId}
+            WHERE user_id = #{userId} AND id = #{orderId}
             """)
     Order findByIdForUser(@Param("userId") String userId, @Param("orderId") Integer orderId);
 
-    /**
-     * 新增订单。
-     */
+    /** 新增订单。 */
     @Insert("""
             INSERT INTO orders(user_id, business_id, order_date, order_total, address_id, order_status)
             VALUES (#{userId}, #{businessId}, #{orderDate}, #{orderTotal}, #{addressId}, #{orderStatus})
             """)
-    @Options(useGeneratedKeys = true, keyProperty = "id")
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     int insert(Order order);
 
     /**

@@ -3,9 +3,14 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.iteleme.backend.mapper.OrderMapper">
-
     <select id="findByUserId" resultType="com.iteleme.backend.entity.Order">
-        SELECT id, user_id, business_id, order_date, order_total, address_id, order_status
+        SELECT id,
+               user_id AS userId,
+               business_id AS businessId,
+               order_date AS orderDate,
+               order_total AS orderTotal,
+               address_id AS addressId,
+               order_status AS orderStatus
         FROM orders
         WHERE user_id = #{userId}
         <if test="businessId != null">

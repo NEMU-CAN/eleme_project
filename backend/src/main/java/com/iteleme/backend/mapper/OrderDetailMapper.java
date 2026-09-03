@@ -9,29 +9,23 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
-/**
- * 订单明细数据访问接口。
- */
+/** 订单明细数据访问接口。 */
 @Mapper
 public interface OrderDetailMapper {
-    /**
-     * 查询订单对应的所有明细。
-     */
+    /** 查询订单对应的所有明细。 */
     @Select("""
-            SELECT id, order_id, food_id, quantity
+            SELECT id, order_id AS orderId, food_id AS foodId, quantity
             FROM orderdetailet
             WHERE order_id = #{orderId}
             ORDER BY id
             """)
     List<OrderDetail> findByOrderId(@Param("orderId") Integer orderId);
 
-    /**
-     * 新增订单明细。
-     */
+    /** 新增订单明细。 */
     @Insert("""
             INSERT INTO orderdetailet(order_id, food_id, quantity)
             VALUES (#{orderId}, #{foodId}, #{quantity})
             """)
-    @Options(useGeneratedKeys = true, keyProperty = "id")
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     int insert(OrderDetail orderDetail);
 }
