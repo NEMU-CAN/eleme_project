@@ -12,11 +12,13 @@ public interface BusinessMapper {
     List<Business> list(@Param("orderTypeId") Integer orderTypeId);
 
     @Select("""
-            SELECT businessId AS id, businessName AS name, businessAddress AS address,
-                   businessExplain AS description, businessImg AS image,
-                   orderTypeId, starPrice AS startPrice, deliveryPrice, remarks AS remark
+            SELECT id, name, address, description, image,
+                   order_type_id AS orderTypeId,
+                   start_price AS startPrice,
+                   delivery_price AS deliveryPrice,
+                   remark
             FROM business
-            WHERE businessId = #{businessId}
+            WHERE id = #{businessId}
             """)
     Business findById(@Param("businessId") Integer businessId);
 }

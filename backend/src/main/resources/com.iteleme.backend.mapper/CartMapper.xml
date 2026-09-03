@@ -2,14 +2,17 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.iteleme.backend.mapper.CartMapper">
     <select id="findByUserId" resultType="com.iteleme.backend.entity.Cart">
-        SELECT cartId AS id, foodId, businessId, userId, quantity FROM cart
-        WHERE userId = #{userId}
-        <if test="businessId != null">AND businessId = #{businessId}</if>
-        ORDER BY cartId
+        SELECT id, food_id AS foodId, business_id AS businessId,
+               user_id AS userId, quantity
+        FROM cart
+        WHERE user_id = #{userId}
+        <if test="businessId != null">AND business_id = #{businessId}</if>
+        ORDER BY id
     </select>
+
     <delete id="deleteByFilter">
-        DELETE FROM cart WHERE userId = #{userId}
-        <if test="businessId != null">AND businessId = #{businessId}</if>
-        <if test="foodId != null">AND foodId = #{foodId}</if>
+        DELETE FROM cart WHERE user_id = #{userId}
+        <if test="businessId != null">AND business_id = #{businessId}</if>
+        <if test="foodId != null">AND food_id = #{foodId}</if>
     </delete>
 </mapper>

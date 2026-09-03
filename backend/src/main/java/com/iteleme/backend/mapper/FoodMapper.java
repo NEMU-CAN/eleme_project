@@ -10,23 +10,27 @@ import java.util.List;
 @Mapper
 public interface FoodMapper {
     @Select("""
-            SELECT foodId AS id, foodName AS name, foodExplain AS description,
-                   foodImg AS image, foodPrice AS price, businessId, remarks AS remark
-            FROM food WHERE businessId = #{businessId} ORDER BY foodId
+            SELECT id, name, description, image, price,
+                   business_id AS businessId, remark
+            FROM food
+            WHERE business_id = #{businessId}
+            ORDER BY id
             """)
     List<Food> findByBusinessId(@Param("businessId") Integer businessId);
 
     @Select("""
-            SELECT foodId AS id, foodName AS name, foodExplain AS description,
-                   foodImg AS image, foodPrice AS price, businessId, remarks AS remark
-            FROM food WHERE foodId = #{foodId}
+            SELECT id, name, description, image, price,
+                   business_id AS businessId, remark
+            FROM food
+            WHERE id = #{foodId}
             """)
     Food findById(@Param("foodId") Integer foodId);
 
     @Select("""
-            SELECT foodId AS id, foodName AS name, foodExplain AS description,
-                   foodImg AS image, foodPrice AS price, businessId, remarks AS remark
-            FROM food WHERE foodId = #{foodId} AND businessId = #{businessId}
+            SELECT id, name, description, image, price,
+                   business_id AS businessId, remark
+            FROM food
+            WHERE id = #{foodId} AND business_id = #{businessId}
             """)
     Food findByIdAndBusinessId(@Param("foodId") Integer foodId,
                                @Param("businessId") Integer businessId);

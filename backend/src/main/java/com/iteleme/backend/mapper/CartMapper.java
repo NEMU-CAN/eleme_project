@@ -16,29 +16,45 @@ public interface CartMapper {
     List<Cart> findByUserId(@Param("userId") String userId, @Param("businessId") Integer businessId);
 
     @Select("""
-            SELECT cartId AS id, foodId, businessId, userId, quantity FROM cart
-            WHERE userId=#{userId} AND businessId=#{businessId} AND foodId=#{foodId} LIMIT 1
+            SELECT id, food_id AS foodId, business_id AS businessId,
+                   user_id AS userId, quantity
+            FROM cart
+            WHERE user_id = #{userId}
+              AND business_id = #{businessId}
+              AND food_id = #{foodId}
+            LIMIT 1
             """)
-    Cart findExisting(@Param("userId") String userId, @Param("businessId") Integer businessId,
+    Cart findExisting(@Param("userId") String userId,
+                      @Param("businessId") Integer businessId,
                       @Param("foodId") Integer foodId);
 
-    @Select("SELECT cartId AS id, foodId, businessId, userId, quantity FROM cart WHERE userId=#{userId} AND cartId=#{cartId}")
+    @Select("""
+            SELECT id, food_id AS foodId, business_id AS businessId,
+                   user_id AS userId, quantity
+            FROM cart
+            WHERE user_id = #{userId} AND id = #{cartId}
+            """)
     Cart findByIdForUser(@Param("userId") String userId, @Param("cartId") Integer cartId);
 
-    @Insert("INSERT INTO cart(foodId,businessId,userId,quantity) VALUES(#{foodId},#{businessId},#{userId},#{quantity})")
-    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "cartId")
+    @Insert("""
+            INSERT INTO cart(food_id, business_id, user_id, quantity)
+            VALUES (#{foodId}, #{businessId}, #{userId}, #{quantity})
+            """)
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     int insert(Cart cart);
 
-    @Update("UPDATE cart SET quantity=quantity+#{quantity} WHERE cartId=#{cartId}")
+    @Update("UPDATE cart SET quantity = quantity + #{quantity} WHERE id = #{cartId}")
     int increaseQuantity(@Param("cartId") Integer cartId, @Param("quantity") Integer quantity);
 
-    @Update("UPDATE cart SET quantity=#{quantity} WHERE userId=#{userId} AND cartId=#{cartId}")
-    int updateQuantity(@Param("userId") String userId, @Param("cartId") Integer cartId,
+    @Update("UPDATE cart SET quantity = #{quantity} WHERE user_id = #{userId} AND id = #{cartId}")
+    int updateQuantity(@Param("userId") String userId,
+                       @Param("cartId") Integer cartId,
                        @Param("quantity") Integer quantity);
 
-    int deleteByFilter(@Param("userId") String userId, @Param("businessId") Integer businessId,
+    int deleteByFilter(@Param("userId") String userId,
+                       @Param("businessId") Integer businessId,
                        @Param("foodId") Integer foodId);
 
-    @Delete("DELETE FROM cart WHERE userId=#{userId} AND cartId=#{cartId}")
+    @Delete("DELETE FROM cart WHERE user_id = #{userId} AND id = #{cartId}")
     int deleteByIdForUser(@Param("userId") String userId, @Param("cartId") Integer cartId);
 }
