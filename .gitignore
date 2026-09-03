@@ -1,1 +1,12 @@
 backend\src\main\resources\application.yaml
+
+# Local Maven helpers
+MAVEN.md
+mvnw.ps1
+
+# Legacy local project tree and build output
+/src/
+/target/
+/.m2/
+/.vscode/
+/HELP.md
