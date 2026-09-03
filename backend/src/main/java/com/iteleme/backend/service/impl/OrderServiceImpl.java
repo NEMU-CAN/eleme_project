@@ -137,6 +137,34 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
+     * 支付订单；当前项目直接模拟支付成功。
+     */
+    @Override
+    @Transactional
+    public OrderVO payOrder(String userId, Integer orderId) {
+        ensureActiveUser(userId);
+        ServiceValidator.requirePositive(orderId, "orderId");
+
+        Order order = orderMapper.findByIdForUser(userId, orderId);
+        if (order == null) {
+            throw ApiException.notFound();
+        }
+        if (Integer.valueOf(1).equals(order.getOrderStatus())) {
+            throw ApiException.conflict("orderId", "订单已支付，不能重复支付");
+        }
+        if (!Integer.valueOf(0).equals(order.getOrderStatus())) {
+            throw ApiException.conflict("orderId", "订单状态不允许支付");
+        }
+
+        int affectedRows = orderMapper.markAsPaid(userId, orderId);
+        if (affectedRows == 0) {
+            throw ApiException.conflict("orderId", "订单状态已发生变化，请重试");
+        }
+
+        return assembleOrder(orderMapper.findByIdForUser(userId, orderId));
+    }
+
+    /**
      * 校验创建订单的请求体。
      */
     private void validateCreateRequest(OrderCreateRequest request) {

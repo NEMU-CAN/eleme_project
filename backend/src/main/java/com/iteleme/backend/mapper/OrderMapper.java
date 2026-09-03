@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
@@ -41,4 +42,16 @@ public interface OrderMapper {
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Order order);
+
+    /**
+     * 将指定用户的未支付订单标记为已支付。
+     */
+    @Update("""
+            UPDATE orders
+            SET order_status = 1
+            WHERE user_id = #{userId}
+              AND id = #{orderId}
+              AND order_status = 0
+            """)
+    int markAsPaid(@Param("userId") String userId, @Param("orderId") Integer orderId);
 }
