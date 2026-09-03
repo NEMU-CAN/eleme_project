@@ -1,18 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.iteleme.backend.mapper.BusinessMapper">
-
     <select id="list" resultType="com.iteleme.backend.entity.Business">
-        SELECT id, name, address, description, image,
-        order_type_id, start_price, delivery_price, remark
+        SELECT businessId AS id, businessName AS name, businessAddress AS address,
+               businessExplain AS description, businessImg AS image, orderTypeId,
+               starPrice AS startPrice, deliveryPrice, remarks AS remark
         FROM business
-        <where>
-            <if test="orderTypeId != null">
-                AND order_type_id = #{orderTypeId}
-            </if>
-        </where>
-        ORDER BY id
+        <where><if test="orderTypeId != null">orderTypeId = #{orderTypeId}</if></where>
+        ORDER BY businessId
     </select>
 </mapper>

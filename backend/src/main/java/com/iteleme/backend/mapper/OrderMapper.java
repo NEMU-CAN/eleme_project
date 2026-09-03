@@ -25,10 +25,16 @@ public interface OrderMapper {
      * 根据用户和订单编号查询订单。
      */
     @Select("""
-            SELECT id, user_id, business_id, order_date, order_total, address_id, order_status
+            SELECT orderId AS id,
+                   userId,
+                   businessId,
+                   orderDate,
+                   orderTotal,
+                   daId AS addressId,
+                   orderState AS orderStatus
             FROM orders
-            WHERE user_id = #{userId}
-              AND id = #{orderId}
+            WHERE userId = #{userId}
+              AND orderId = #{orderId}
             """)
     Order findByIdForUser(@Param("userId") String userId, @Param("orderId") Integer orderId);
 
@@ -36,9 +42,9 @@ public interface OrderMapper {
      * 新增订单。
      */
     @Insert("""
-            INSERT INTO orders(user_id, business_id, order_date, order_total, address_id, order_status)
+            INSERT INTO orders(userId, businessId, orderDate, orderTotal, daId, orderState)
             VALUES (#{userId}, #{businessId}, #{orderDate}, #{orderTotal}, #{addressId}, #{orderStatus})
             """)
-    @Options(useGeneratedKeys = true, keyProperty = "id")
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "orderId")
     int insert(Order order);
 }

@@ -1,7 +1,7 @@
 package com.iteleme.backend.controller;
 
+import com.iteleme.backend.entity.Result;
 import com.iteleme.backend.service.DeliveryAddressService;
-import com.iteleme.backend.vo.DeliveryAddressVO;
 import com.iteleme.backend.vo.request.DeliveryAddressRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,77 +11,53 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-/** 当前用户的收货地址 RESTful 接口。 */
+/** 用户维度的收货地址 RESTful 接口。 */
 @RestController
-@RequestMapping("/api/delivery-addresses")
+@RequestMapping("/api/users/{userId}/delivery-addresses")
 public class DeliveryAddressController {
-    private static final String DEFAULT_USER_ID = "u10001";
     private final DeliveryAddressService deliveryAddressService;
 
     public DeliveryAddressController(DeliveryAddressService deliveryAddressService) {
         this.deliveryAddressService = deliveryAddressService;
     }
 
+    /** 查询指定用户的全部收货地址。 */
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> list(
-            @RequestHeader(value = "X-User-Id", required = false) String userId) {
-        return ResponseEntity.ok(deliveryAddressService.listDeliveryAddressesByUserId(resolveUserId(userId))
-                .stream().map(DeliveryAddressController::toResponse).toList());
+    public Result list(@PathVariable String userId) {
+        return Result.success(deliveryAddressService.listDeliveryAddressesByUserId(userId));
     }
 
+    /** 为指定用户新增收货地址。 */
     @PostMapping
-    public ResponseEntity<Map<String, Object>> create(
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestBody DeliveryAddressRequest request) {
-        DeliveryAddressVO created = deliveryAddressService.createDeliveryAddress(resolveUserId(userId), request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(created));
+    public ResponseEntity<Result> create(@PathVariable String userId,
+                                         @RequestBody DeliveryAddressRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Result.success(deliveryAddressService.createDeliveryAddress(userId, request)));
     }
 
+    /** 获取属于指定用户的收货地址详情。 */
     @GetMapping("/{daId}")
-    public ResponseEntity<Map<String, Object>> get(
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @PathVariable Integer daId) {
-        return ResponseEntity.ok(toResponse(
-                deliveryAddressService.getDeliveryAddressById(resolveUserId(userId), daId)));
+    public Result get(@PathVariable String userId,
+                      @PathVariable Integer daId) {
+        return Result.success(deliveryAddressService.getDeliveryAddressById(userId, daId));
     }
 
+    /** 全量更新属于指定用户的收货地址。 */
     @PutMapping("/{daId}")
-    public ResponseEntity<Map<String, Object>> update(
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @PathVariable Integer daId,
-            @RequestBody DeliveryAddressRequest request) {
-        return ResponseEntity.ok(toResponse(
-                deliveryAddressService.updateDeliveryAddress(resolveUserId(userId), daId, request)));
+    public Result update(@PathVariable String userId,
+                         @PathVariable Integer daId,
+                         @RequestBody DeliveryAddressRequest request) {
+        return Result.success(deliveryAddressService.updateDeliveryAddress(userId, daId, request));
     }
 
+    /** 删除属于指定用户的收货地址。 */
     @DeleteMapping("/{daId}")
-    public ResponseEntity<Void> delete(
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @PathVariable Integer daId) {
-        deliveryAddressService.deleteDeliveryAddress(resolveUserId(userId), daId);
-        return ResponseEntity.noContent().build();
-    }
-
-    private static String resolveUserId(String userId) {
-        return userId == null || userId.isBlank() ? DEFAULT_USER_ID : userId;
-    }
-
-    private static Map<String, Object> toResponse(DeliveryAddressVO address) {
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("daId", address.getId());
-        response.put("contactName", address.getContactName());
-        response.put("contactSex", address.getContactSex());
-        response.put("contactTel", address.getContactTel());
-        response.put("address", address.getAddress());
-        response.put("userId", address.getUserId());
-        return response;
+    public Result delete(@PathVariable String userId,
+                         @PathVariable Integer daId) {
+        deliveryAddressService.deleteDeliveryAddress(userId, daId);
+        return Result.success();
     }
 }

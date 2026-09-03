@@ -18,10 +18,10 @@ public interface OrderDetailMapper {
      * 查询订单对应的所有明细。
      */
     @Select("""
-            SELECT id, order_id, food_id, quantity
+            SELECT odId AS id, orderId, foodId, quantity
             FROM orderdetailet
-            WHERE order_id = #{orderId}
-            ORDER BY id
+            WHERE orderId = #{orderId}
+            ORDER BY odId
             """)
     List<OrderDetail> findByOrderId(@Param("orderId") Integer orderId);
 
@@ -29,9 +29,9 @@ public interface OrderDetailMapper {
      * 新增订单明细。
      */
     @Insert("""
-            INSERT INTO orderdetailet(order_id, food_id, quantity)
+            INSERT INTO orderdetailet(orderId, foodId, quantity)
             VALUES (#{orderId}, #{foodId}, #{quantity})
             """)
-    @Options(useGeneratedKeys = true, keyProperty = "id")
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "odId")
     int insert(OrderDetail orderDetail);
 }

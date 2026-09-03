@@ -11,64 +11,34 @@ import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
-/**
- * 送货地址数据访问接口。
- */
 @Mapper
 public interface DeliveryAddressMapper {
-    /**
-     * 查询某个用户的地址列表。
-     */
     @Select("""
-            SELECT id, contact_name, contact_sex, contact_tel, address, user_id
-            FROM deliveryaddress
-            WHERE user_id = #{userId}
-            ORDER BY id
+            SELECT daId AS id, contactName, contactSex, contactTel, address, userId
+            FROM deliveryaddress WHERE userId = #{userId} ORDER BY daId
             """)
     List<DeliveryAddress> findByUserId(@Param("userId") String userId);
 
-    /**
-     * 根据用户和地址编号查询单条地址。
-     */
     @Select("""
-            SELECT id, contact_name, contact_sex, contact_tel, address, user_id
-            FROM deliveryaddress
-            WHERE user_id = #{userId}
-              AND id = #{daId}
+            SELECT daId AS id, contactName, contactSex, contactTel, address, userId
+            FROM deliveryaddress WHERE userId = #{userId} AND daId = #{daId}
             """)
     DeliveryAddress findByIdForUser(@Param("userId") String userId, @Param("daId") Integer daId);
 
-    /**
-     * 新增送货地址。
-     */
     @Insert("""
-            INSERT INTO deliveryaddress(contact_name, contact_sex, contact_tel, address, user_id)
+            INSERT INTO deliveryaddress(contactName, contactSex, contactTel, address, userId)
             VALUES (#{contactName}, #{contactSex}, #{contactTel}, #{address}, #{userId})
             """)
-    @Options(useGeneratedKeys = true, keyProperty = "id")
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "daId")
     int insert(DeliveryAddress deliveryAddress);
 
-    /**
-     * 更新送货地址。
-     */
     @Update("""
-            UPDATE deliveryaddress
-            SET contact_name = #{contactName},
-                contact_sex = #{contactSex},
-                contact_tel = #{contactTel},
-                address = #{address}
-            WHERE user_id = #{userId}
-              AND id = #{id}
+            UPDATE deliveryaddress SET contactName=#{contactName}, contactSex=#{contactSex},
+              contactTel=#{contactTel}, address=#{address}
+            WHERE userId=#{userId} AND daId=#{id}
             """)
     int update(DeliveryAddress deliveryAddress);
 
-    /**
-     * 删除指定地址。
-     */
-    @Delete("""
-            DELETE FROM deliveryaddress
-            WHERE user_id = #{userId}
-              AND id = #{daId}
-            """)
+    @Delete("DELETE FROM deliveryaddress WHERE userId=#{userId} AND daId=#{daId}")
     int deleteByIdForUser(@Param("userId") String userId, @Param("daId") Integer daId);
 }

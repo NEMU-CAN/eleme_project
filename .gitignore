@@ -1,4 +1,4 @@
-backend\src\main\resources\application.yaml
+backend/src/main/resources/application.yaml
 
 # Local Maven helpers
 MAVEN.md
