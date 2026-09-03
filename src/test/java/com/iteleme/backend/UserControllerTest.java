@@ -45,10 +45,10 @@ public class UserControllerTest {
     @Test
     @DisplayName("用户注册 - 用户已存在应返回409")
     void testRegister_Conflict() throws Exception {
-        // u10001 是我们在数据库中预存的张三
+        // 11111111111 是 elm.sql 中预存的张三丰
         String json = """
             {
-                "userId": "u10001",
+                "userId": "11111111111",
                 "password": "pass@123456",
                 "userName": "重复张三",
                 "userSex": 1
@@ -65,15 +65,15 @@ public class UserControllerTest {
     void testLogin_Success() throws Exception {
         String json = """
             {
-                "userId": "u10001",
-                "password": "12345678"
+                "userId": "11111111111",
+                "password": "123"
             }
             """;
         mockMvc.perform(post("/api/sessions")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value("u10001"))
+                .andExpect(jsonPath("$.userId").value("11111111111"))
                 .andExpect(jsonPath("$.token").exists());
     }
 
@@ -82,7 +82,7 @@ public class UserControllerTest {
     void testLogin_WrongPassword() throws Exception {
         String json = """
             {
-                "userId": "u10001",
+                "userId": "11111111111",
                 "password": "wrongpassword"
             }
             """;
