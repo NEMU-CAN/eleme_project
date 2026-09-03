@@ -10,11 +10,12 @@ export interface CategoryItem {
 
 export interface MenuItem {
   id: string
+  businessId: string
   name: string
   description: string
   price: number
   image: string
-  tag?: string
+  remark?: string
 }
 
 export interface MenuSection {
@@ -27,17 +28,12 @@ export interface Merchant {
   id: string
   name: string
   image: string
-  rating: number
-  monthlySales: number
+  address: string
+  description: string
+  orderTypeId: number
   minOrder: number
   deliveryFee: number
-  distanceKm: number
-  etaMinutes: number
-  cuisine: string
-  highlight: string
-  tags: string[]
-  banner: string
-  promotions: string[]
+  remark?: string
   menuSections: MenuSection[]
 }
 
@@ -46,11 +42,15 @@ export interface Address {
   name: string
   phone: string
   detail: string
-  note?: string
+  sex: 0 | 1
+  userId: string
 }
 
 export interface CartLine {
   id: string
+  cartId: string
+  foodId: string
+  businessId: string
   name: string
   price: number
   image: string
@@ -59,6 +59,7 @@ export interface CartLine {
 
 export interface OrderRecord {
   id: string
+  userId: string
   merchantId: string
   merchantName: string
   merchantImage: string
@@ -77,10 +78,13 @@ export interface OrderRecord {
 }
 
 export interface UserProfile {
+  id: string
   name: string
   phone: string
   gender: 'male' | 'female'
+  sex: 0 | 1
   avatar: string
+  delFlag?: number
 }
 
 export interface CheckoutDraft {

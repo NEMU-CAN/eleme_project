@@ -11,4 +11,13 @@ public interface OrderService {
     OrderVO createOrder(String userId, OrderCreateRequest request);
 
     OrderVO getOrderById(String userId, Integer orderId);
+
+    /**
+     * 支付订单。
+     *
+     * @param userId 用户编号
+     * @param orderId 订单编号
+     * @return 支付成功后的订单信息
+     */
+    OrderVO payOrder(String userId, Integer orderId);
 }

@@ -56,4 +56,15 @@ public class OrderController {
                                @PathVariable("orderId") Integer orderId) {
         return Result.success(orderService.getOrderById(userId, orderId));
     }
+
+    /**
+     * 支付订单。
+     *
+     * <p>当前项目不接入真实支付渠道，用户发起请求后直接将订单标记为已支付。</p>
+     */
+    @PostMapping("/{orderId}/payments")
+    public Result payOrder(@PathVariable("userId") String userId,
+                           @PathVariable("orderId") Integer orderId) {
+        return Result.success(orderService.payOrder(userId, orderId));
+    }
 }

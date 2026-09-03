@@ -322,6 +322,12 @@ button {
   box-shadow: 0 0 0 4px rgba(14, 109, 229, 0.1);
 }
 
+.field__control--textarea {
+  min-height: 86px;
+  padding-top: 12px;
+  resize: vertical;
+}
+
 .field__hint {
   font-size: 12px;
   color: var(--muted);
@@ -583,6 +589,12 @@ button {
 
 .quantity-stepper__button:hover {
   transform: translateY(-1px);
+}
+
+.quantity-stepper__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+  transform: none;
 }
 
 .quantity-stepper__button:active {

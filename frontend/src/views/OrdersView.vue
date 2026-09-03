@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BottomNav from '@/components/BottomNav.vue'
 import SiteHeader from '@/components/SiteHeader.vue'
@@ -11,6 +11,21 @@ import type { OrderStatus } from '@/types'
 const router = useRouter()
 const store = useHungryStore()
 const filter = ref<'all' | OrderStatus>('all')
+const error = ref('')
+
+onMounted(async () => {
+  if (!store.state.user) {
+    router.replace({ path: '/login', query: { redirect: '/orders' } })
+    return
+  }
+
+  try {
+    error.value = ''
+    await store.loadOrders()
+  } catch (cause) {
+    error.value = store.messageFromError(cause)
+  }
+})
 
 // 按时间倒序排列，最新订单放在最前面。
 const sortedOrders = computed(() =>
@@ -58,7 +73,7 @@ function goPayment(orderId: string) {
           <div class="info-card__header">
             <div>
               <p class="eyebrow">订单概览</p>
-              <h3 class="info-card__title">本地 mock 订单</h3>
+              <h3 class="info-card__title">后端订单</h3>
             </div>
             <span class="status-pill">
               <UiIcon name="orders" :size="14" />
@@ -96,11 +111,18 @@ function goPayment(orderId: string) {
 
       <!-- 订单列表：每条订单都带有明细和支付入口。 -->
       <section class="section">
-        <div v-if="visibleOrders.length" class="timeline-list">
+        <p v-if="error" class="field__hint" style="color: var(--danger); margin-bottom: 12px">{{ error }}</p>
+
+        <div v-if="store.state.loading.orders" class="empty-state panel">
+          <h3 class="empty-state__title">正在加载订单</h3>
+          <p class="empty-state__text">正在从后端同步订单记录。</p>
+        </div>
+
+        <div v-else-if="visibleOrders.length" class="timeline-list">
           <article v-for="order in visibleOrders" :key="order.id" class="timeline-item panel">
             <div class="timeline-item__top">
               <div class="merchant-card__metrics" style="align-items: center">
-                <img :src="order.merchantImage" :alt="order.merchantName" width="56" height="56" style="border-radius: 16px" />
+                <img :src="order.merchantImage" :alt="order.merchantName" width="56" height="56" style="border-radius: 16px; object-fit: cover" />
                 <div>
                   <h3 class="timeline-item__name">{{ order.merchantName }}</h3>
                   <p class="timeline-item__meta">{{ formatOrderTime(order.createdAt) }}</p>
@@ -127,7 +149,7 @@ function goPayment(orderId: string) {
             </div>
 
             <div class="auth-card__footer">
-              <span class="muted">{{ order.addressName }} · {{ order.addressPhone }}</span>
+              <span class="muted">{{ order.addressName || '收货人待同步' }} · {{ order.addressPhone || '电话待同步' }}</span>
               <button
                 v-if="order.status === 'pending'"
                 type="button"
