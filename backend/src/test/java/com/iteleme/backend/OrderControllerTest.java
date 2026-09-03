@@ -43,6 +43,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.data.businessId").value(10001))
                 .andExpect(jsonPath("$.data.addressId").value(1))
                 .andExpect(jsonPath("$.data.orderStatus").value(0))
+                .andExpect(jsonPath("$.data.orderTotal").value(32.0))
                 .andExpect(jsonPath("$.data.business.id").value(10001))
                 .andExpect(jsonPath("$.data.deliveryAddress.id").value(1))
                 .andExpect(jsonPath("$.data.items[0].food.id").value(1))
@@ -75,5 +76,67 @@ class OrderControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value(40901))
                 .andExpect(jsonPath("$.data[0].field").value("cart"));
+    }
+
+    @Test
+    @DisplayName("创建订单 - 收货地址不存在返回404")
+    void createOrderWithMissingAddressReturns404() throws Exception {
+        mockMvc.perform(post(CART_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"businessId\":10001,\"foodId\":1,\"quantity\":1}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post(ORDER_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"businessId\":10001,\"daId\":999999}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(40401))
+                .andExpect(jsonPath("$.msg").value("资源不存在"));
+    }
+
+    @Test
+    @DisplayName("创建订单 - 商家不存在返回404")
+    void createOrderWithMissingBusinessReturns404() throws Exception {
+        mockMvc.perform(post(ORDER_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"businessId\":999999,\"daId\":1}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(40401));
+    }
+
+    @Test
+    @DisplayName("订单详情 - 订单不存在返回404")
+    void getOrderDetailNotFoundReturns404() throws Exception {
+        mockMvc.perform(get(ORDER_URL + "/999999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(40401))
+                .andExpect(jsonPath("$.msg").value("资源不存在"));
+    }
+
+    @Test
+    @DisplayName("订单列表 - 用户不存在返回404")
+    void listOrdersUserNotFoundReturns404() throws Exception {
+        mockMvc.perform(get("/api/users/99999999999/orders"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(40401));
+    }
+
+    @Test
+    @DisplayName("订单列表 - 无订单返回空数组")
+    void listOrdersEmptyReturnsEmptyArray() throws Exception {
+        mockMvc.perform(get(ORDER_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(1))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    @DisplayName("订单列表 - orderState 非法值返回400")
+    void listOrdersInvalidOrderStateReturns400() throws Exception {
+        mockMvc.perform(get(ORDER_URL).param("orderState", "2"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(40001))
+                .andExpect(jsonPath("$.data[0].field").value("orderState"));
     }
 }
