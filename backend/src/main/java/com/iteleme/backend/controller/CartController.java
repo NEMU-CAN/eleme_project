@@ -7,10 +7,6 @@ import com.iteleme.backend.vo.request.CartUpdateRequest;
 
 import lombok.RequiredArgsConstructor;
 
-// ===== [阶段① 新增] 当前登录用户上下文 =====
-import com.iteleme.backend.config.CurrentUser;
-// ===== [阶段① 新增结束] =====
-
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -36,7 +32,6 @@ public class CartController {
     @GetMapping
     public Result list(@PathVariable String userId,
                        @RequestParam(required = false) Integer businessId) {
-        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         return Result.success(cartService.listCartItems(userId, businessId));
     }
 
@@ -44,7 +39,6 @@ public class CartController {
     @PostMapping
     public Result upsert(@PathVariable String userId,
                          @RequestBody CartCreateRequest request) {
-        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         return Result.success(cartService.upsertCartItem(userId, request));
     }
 
@@ -53,7 +47,6 @@ public class CartController {
     public Result updateQuantity(@PathVariable String userId,
                                  @PathVariable Integer cartId,
                                  @RequestBody CartUpdateRequest request) {
-        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         return Result.success(cartService.updateCartItemQuantity(userId, cartId, request));
     }
 
@@ -61,7 +54,6 @@ public class CartController {
     @DeleteMapping("/{cartId}")
     public Result deleteOne(@PathVariable String userId,
                             @PathVariable Integer cartId) {
-        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         cartService.deleteCartItem(userId, cartId);
         return Result.success();
     }
@@ -71,7 +63,6 @@ public class CartController {
     public Result deleteByFilter(@PathVariable String userId,
                                  @RequestParam(required = false) Integer businessId,
                                  @RequestParam(required = false) Integer foodId) {
-        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         cartService.deleteCartItemsByFilter(userId, businessId, foodId);
         return Result.success();
     }

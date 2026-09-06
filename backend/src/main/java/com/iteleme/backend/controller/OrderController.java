@@ -4,9 +4,6 @@ import com.iteleme.backend.entity.Result;
 import com.iteleme.backend.service.OrderService;
 import com.iteleme.backend.vo.request.OrderCreateRequest;
 import lombok.RequiredArgsConstructor;
-// ===== [阶段① 新增] 当前登录用户上下文 =====
-import com.iteleme.backend.config.CurrentUser;
-// ===== [阶段① 新增结束] =====
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,7 +33,6 @@ public class OrderController {
     public Result listOrdersByUserId(@PathVariable("userId") String userId,
                                      @RequestParam(value = "businessId", required = false) Integer businessId,
                                      @RequestParam(value = "orderState", required = false) Integer orderState) {
-        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         return Result.success(orderService.listOrdersByUserId(userId, businessId, orderState));
     }
 
@@ -46,7 +42,6 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<Result> createOrder(@PathVariable("userId") String userId,
                                               @RequestBody OrderCreateRequest request) {
-        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(Result.success(orderService.createOrder(userId, request)));
@@ -58,7 +53,6 @@ public class OrderController {
     @GetMapping("/{orderId}")
     public Result getOrderById(@PathVariable("userId") String userId,
                                @PathVariable("orderId") Integer orderId) {
-        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         return Result.success(orderService.getOrderById(userId, orderId));
     }
 
@@ -70,7 +64,6 @@ public class OrderController {
     @PostMapping("/{orderId}/payments")
     public Result payOrder(@PathVariable("userId") String userId,
                            @PathVariable("orderId") Integer orderId) {
-        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         return Result.success(orderService.payOrder(userId, orderId));
     }
 }
