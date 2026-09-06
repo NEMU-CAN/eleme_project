@@ -4,6 +4,9 @@ import com.iteleme.backend.entity.Result;
 import com.iteleme.backend.service.CartService;
 import com.iteleme.backend.vo.request.CartCreateRequest;
 import com.iteleme.backend.vo.request.CartUpdateRequest;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -17,12 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 /** 用户维度的购物车 RESTful 接口。 */
 @RestController
 @RequestMapping("/api/users/{userId}/cart-items")
+@RequiredArgsConstructor
 public class CartController {
     private final CartService cartService;
 
-    public CartController(CartService cartService) {
-        this.cartService = cartService;
-    }
+    // public CartController(CartService cartService) {
+    //     this.cartService = cartService;
+    // }
 
     /** 查询某个用户的购物车，可按商家过滤。 */
     @GetMapping

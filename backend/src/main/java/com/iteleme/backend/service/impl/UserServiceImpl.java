@@ -8,7 +8,6 @@ import com.iteleme.backend.vo.UserVO;
 import com.iteleme.backend.vo.request.LoginRequest;
 import com.iteleme.backend.vo.request.UserCreateRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -17,10 +16,10 @@ import java.util.Objects;
 /**
  * 用户业务实现。
  */
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     /** 用户表数据访问对象。 */
-    @Autowired
-    private UserMapper userMapper;
+    private final UserMapper userMapper;
 
     /**
      * 查询用户信息。

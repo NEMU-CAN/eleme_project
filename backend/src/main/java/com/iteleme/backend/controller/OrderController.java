@@ -4,7 +4,6 @@ import com.iteleme.backend.entity.Result;
 import com.iteleme.backend.service.OrderService;
 import com.iteleme.backend.vo.request.OrderCreateRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,10 +21,10 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/users/{userId}/orders")
+@RequiredArgsConstructor
 public class OrderController {
     /** 订单业务服务。 */
-    @Autowired
-    private OrderService orderService;
+    private final OrderService orderService;
 
     /**
      * 查询用户订单列表。
