@@ -84,14 +84,23 @@ public class OrderServiceImpl implements OrderService {
             throw ApiException.conflict("cart", "购物车为空，无法创建订单");
         }
 
-        BigDecimal orderTotal = BigDecimal.ZERO;
+        BigDecimal foodTotal = BigDecimal.ZERO;
         for (Cart cartItem : cartItems) {
             Food food = foodMapper.findByIdAndBusinessId(cartItem.getFoodId(), request.getBusinessId());
             if (food == null) {
                 throw ApiException.notFound();
             }
-            orderTotal = orderTotal.add(food.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+            foodTotal = foodTotal.add(food.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
         }
+
+        // 起送门槛校验：菜品总价必须达到起送费
+        if (business.getStartPrice() != null && foodTotal.compareTo(business.getStartPrice()) < 0) {
+            throw ApiException.conflict("businessId", "未达起送金额 " + business.getStartPrice());
+        }
+
+        // 订单总价 = 菜品总价 + 配送费
+        BigDecimal orderTotal = foodTotal.add(
+                business.getDeliveryPrice() == null ? BigDecimal.ZERO : business.getDeliveryPrice());
 
         Order order = new Order();
         order.setUserId(userId);

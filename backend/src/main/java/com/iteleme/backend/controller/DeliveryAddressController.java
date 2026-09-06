@@ -6,6 +6,10 @@ import com.iteleme.backend.vo.request.DeliveryAddressRequest;
 
 import lombok.RequiredArgsConstructor;
 
+// ===== [阶段① 新增] 当前登录用户上下文 =====
+import com.iteleme.backend.config.CurrentUser;
+// ===== [阶段① 新增结束] =====
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,6 +35,7 @@ public class DeliveryAddressController {
     /** 查询指定用户的全部收货地址。 */
     @GetMapping
     public Result list(@PathVariable String userId) {
+        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         return Result.success(deliveryAddressService.listDeliveryAddressesByUserId(userId));
     }
 
@@ -38,6 +43,7 @@ public class DeliveryAddressController {
     @PostMapping
     public ResponseEntity<Result> create(@PathVariable String userId,
                                          @RequestBody DeliveryAddressRequest request) {
+        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Result.success(deliveryAddressService.createDeliveryAddress(userId, request)));
     }
@@ -46,6 +52,7 @@ public class DeliveryAddressController {
     @GetMapping("/{daId}")
     public Result get(@PathVariable String userId,
                       @PathVariable Integer daId) {
+        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         return Result.success(deliveryAddressService.getDeliveryAddressById(userId, daId));
     }
 
@@ -54,6 +61,7 @@ public class DeliveryAddressController {
     public Result update(@PathVariable String userId,
                          @PathVariable Integer daId,
                          @RequestBody DeliveryAddressRequest request) {
+        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         return Result.success(deliveryAddressService.updateDeliveryAddress(userId, daId, request));
     }
 
@@ -61,6 +69,7 @@ public class DeliveryAddressController {
     @DeleteMapping("/{daId}")
     public Result delete(@PathVariable String userId,
                          @PathVariable Integer daId) {
+        userId = CurrentUser.resolve(userId); // [阶段①] token 优先，回落路径 userId
         deliveryAddressService.deleteDeliveryAddress(userId, daId);
         return Result.success();
     }

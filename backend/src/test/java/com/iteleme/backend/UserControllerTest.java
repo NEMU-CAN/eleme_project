@@ -58,14 +58,17 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("用户登录 - 正确密码返回 Result 包装的 UserVO")
+    @DisplayName("用户登录 - 正确密码返回 Result 包装的 LoginVO(token+user)")
     void loginSuccess() throws Exception {
         String json = "{\"userId\":\"11111111111\",\"password\":\"123\"}";
         mockMvc.perform(post("/api/sessions").contentType(MediaType.APPLICATION_JSON).content(json))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(1))
-                .andExpect(jsonPath("$.data.id").value("11111111111"))
-                .andExpect(jsonPath("$.data.token").doesNotExist());
+                // ===== [阶段① 新增] login 返回 LoginVO{token,user}，token 应存在，用户信息在 user 下 =====
+                .andExpect(jsonPath("$.data.token").isNotEmpty())
+                .andExpect(jsonPath("$.data.user.id").value("11111111111"))
+                .andExpect(jsonPath("$.data.user.name").value("张三丰"))
+                .andExpect(jsonPath("$.data.user.password").doesNotExist());
     }
 
     @Test
