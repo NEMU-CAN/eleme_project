@@ -4,6 +4,9 @@ import com.iteleme.backend.entity.Result;
 import com.iteleme.backend.service.UserService;
 import com.iteleme.backend.vo.request.LoginRequest;
 import com.iteleme.backend.vo.request.UserCreateRequest;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,12 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 /** 用户注册、登录及资料接口。 */
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
 
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
+    // public UserController(UserService userService) {
+    //     this.userService = userService;
+    // }
 
     /** 根据用户编号查询用户资料。 */
     @GetMapping("/users/{userId}")

@@ -8,7 +8,6 @@ import com.iteleme.backend.service.DeliveryAddressService;
 import com.iteleme.backend.vo.DeliveryAddressVO;
 import com.iteleme.backend.vo.request.DeliveryAddressRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,13 +16,12 @@ import java.util.List;
 /**
  * 送货地址业务实现。
  */
+@RequiredArgsConstructor
 public class DeliveryAddressServiceImpl implements DeliveryAddressService {
     /** 送货地址表数据访问对象。 */
-    @Autowired
-    private DeliveryAddressMapper deliveryAddressMapper;
+    private final DeliveryAddressMapper deliveryAddressMapper;
     /** 用户表数据访问对象。 */
-    @Autowired
-    private UserMapper userMapper;
+    private final UserMapper userMapper;
 
     /**
      * 查询用户地址列表。

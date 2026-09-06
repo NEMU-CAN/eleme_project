@@ -19,7 +19,6 @@ import com.iteleme.backend.vo.OrderItemVO;
 import com.iteleme.backend.vo.OrderVO;
 import com.iteleme.backend.vo.request.OrderCreateRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,31 +31,25 @@ import java.util.List;
 /**
  * 订单业务实现。
  */
+@RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
     /** 订单日期格式。 */
     private static final DateTimeFormatter ORDER_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /** 订单表数据访问对象。 */
-    @Autowired
-    private OrderMapper orderMapper;
+    private final OrderMapper orderMapper;
     /** 订单明细表数据访问对象。 */
-    @Autowired
-    private OrderDetailMapper orderDetailMapper;
+    private final OrderDetailMapper orderDetailMapper;
     /** 购物车表数据访问对象。 */
-    @Autowired
-    private CartMapper cartMapper;
+    private final CartMapper cartMapper;
     /** 用户表数据访问对象。 */
-    @Autowired
-    private UserMapper userMapper;
+    private final UserMapper userMapper;
     /** 商家表数据访问对象。 */
-    @Autowired
-    private BusinessMapper businessMapper;
+    private final BusinessMapper businessMapper;
     /** 食品表数据访问对象。 */
-    @Autowired
-    private FoodMapper foodMapper;
+    private final FoodMapper foodMapper;
     /** 送货地址表数据访问对象。 */
-    @Autowired
-    private DeliveryAddressMapper deliveryAddressMapper;
+    private final DeliveryAddressMapper deliveryAddressMapper;
 
     /**
      * 查询用户订单列表。

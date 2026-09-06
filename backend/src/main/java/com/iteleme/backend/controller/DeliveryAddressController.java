@@ -3,6 +3,9 @@ package com.iteleme.backend.controller;
 import com.iteleme.backend.entity.Result;
 import com.iteleme.backend.service.DeliveryAddressService;
 import com.iteleme.backend.vo.request.DeliveryAddressRequest;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,12 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 /** 用户维度的收货地址 RESTful 接口。 */
 @RestController
 @RequestMapping("/api/users/{userId}/delivery-addresses")
+@RequiredArgsConstructor
 public class DeliveryAddressController {
     private final DeliveryAddressService deliveryAddressService;
 
-    public DeliveryAddressController(DeliveryAddressService deliveryAddressService) {
-        this.deliveryAddressService = deliveryAddressService;
-    }
+    // public DeliveryAddressController(DeliveryAddressService deliveryAddressService) {
+    //     this.deliveryAddressService = deliveryAddressService;
+    // }
 
     /** 查询指定用户的全部收货地址。 */
     @GetMapping

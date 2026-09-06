@@ -8,18 +8,16 @@ import com.iteleme.backend.service.BusinessService;
 import com.iteleme.backend.vo.BusinessVO;
 import com.iteleme.backend.vo.FoodVO;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class BusinessServiceImpl implements BusinessService {
 
-    @Autowired
-    private BusinessMapper businessMapper;
-    @Autowired
-    private FoodMapper foodMapper;
+    private final BusinessMapper businessMapper;
+    private final FoodMapper foodMapper;
 
     /**
      * 查询商家列表。

@@ -13,7 +13,6 @@ import com.iteleme.backend.vo.CartItemVO;
 import com.iteleme.backend.vo.request.CartCreateRequest;
 import com.iteleme.backend.vo.request.CartUpdateRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,19 +21,16 @@ import java.util.List;
 /**
  * 购物车业务实现。
  */
+@RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
     /** 购物车表数据访问对象。 */
-    @Autowired
-    private CartMapper cartMapper;
+    private final CartMapper cartMapper;
     /** 用户表数据访问对象。 */
-    @Autowired
-    private UserMapper userMapper;
+    private final UserMapper userMapper;
     /** 商家表数据访问对象。 */
-    @Autowired
-    private BusinessMapper businessMapper;
+    private final BusinessMapper businessMapper;
     /** 食品表数据访问对象。 */
-    @Autowired
-    private FoodMapper foodMapper;
+    private final FoodMapper foodMapper;
 
     /**
      * 查询用户购物车列表。
