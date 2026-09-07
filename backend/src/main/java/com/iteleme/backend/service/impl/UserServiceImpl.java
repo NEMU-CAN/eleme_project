@@ -4,6 +4,7 @@ import com.iteleme.backend.entity.User;
 import com.iteleme.backend.exception.ApiException;
 import com.iteleme.backend.mapper.UserMapper;
 import com.iteleme.backend.service.UserService;
+import com.iteleme.backend.vo.LoginVO;
 import com.iteleme.backend.vo.UserVO;
 import com.iteleme.backend.vo.request.LoginRequest;
 import com.iteleme.backend.vo.request.UserCreateRequest;
@@ -11,6 +12,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
+
+// ===== [阶段① 新增] 注入 JwtUtil 用于生成登录 token =====
+import com.iteleme.backend.config.JwtUtil;
+// ===== [阶段① 新增结束] =====
 
 @Service
 /**
@@ -20,6 +25,9 @@ import java.util.Objects;
 public class UserServiceImpl implements UserService {
     /** 用户表数据访问对象。 */
     private final UserMapper userMapper;
+    // ===== [阶段① 新增] JWT token 工具 =====
+    private final JwtUtil jwtUtil;
+    // ===== [阶段① 新增结束] =====
 
     /**
      * 查询用户信息。
@@ -59,7 +67,7 @@ public class UserServiceImpl implements UserService {
      * 用户登录。
      */
     @Override
-    public UserVO login(LoginRequest request) {
+    public LoginVO login(LoginRequest request) {
         if (request == null) {
             throw ApiException.badRequest("body", "请求体不能为空");
         }
@@ -74,7 +82,10 @@ public class UserServiceImpl implements UserService {
         if (!Objects.equals(user.getPassword(), request.getPassword())) {
             throw ApiException.unauthorized();
         }
-        return VoConverters.toUserVO(user);
+        // ===== [阶段① 新增] 登录成功生成 token =====
+        String token = jwtUtil.generateToken(user.getId());
+        return new LoginVO(token, VoConverters.toUserVO(user));
+        // ===== [阶段① 新增结束] =====
     }
 
     /**

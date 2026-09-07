@@ -11,3 +11,12 @@ mybatis:
   configuration:
     # 开启下划线到驼峰命名的自动映射
     map-underscore-to-camel-case: true
+
+# ===== [阶段① 新增] JWT 登录令牌配置 =====
+app:
+  jwt:
+    # 签名密钥（生产环境务必改成强随机值）
+    secret: codex-workS-eleme-secret
+    # 令牌有效期（小时）
+    expire-hours: 24
+# ===== [阶段① 新增结束] =====
