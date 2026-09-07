@@ -129,11 +129,12 @@ class OrderControllerTest {
     }
 
     @Test
-    @DisplayName("订单列表 - 用户不存在返回404")
-    void listOrdersUserNotFoundReturns404() throws Exception {
+    @DisplayName("订单列表 - 用户不存在/已删除的 token 返回401")
+    void listOrdersUserNotFoundTokenReturns401() throws Exception {
         mockMvc.perform(get("/api/users/99999999999/orders").header("Authorization", auth("99999999999")))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value(40401));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40101))
+                .andExpect(jsonPath("$.msg").value("未登录或登录已过期"));
     }
 
     @Test

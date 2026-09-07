@@ -10,6 +10,7 @@ package com.iteleme.backend.config;
 //       OPTIONS 预检请求（CORS）不鉴权，直接放行。
 // ============================================================
 import com.iteleme.backend.entity.Result;
+import com.iteleme.backend.mapper.UserMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final JwtUtil jwtUtil;
+    private final UserMapper userMapper;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
@@ -44,6 +46,13 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
         if (userId == null) {
             // [阶段②] 强制鉴权：无有效 token → 401（拦截器异常不走 @ControllerAdvice，直接写响应）
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write(MAPPER.writeValueAsString(Result.error(40101, "未登录或登录已过期")));
+            return false;
+        }
+        // [阶段②] 用户状态校验：用户不存在或已删除（del_flag != 1）→ 视为未登录
+        if (userMapper.findActiveById(userId) == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(MAPPER.writeValueAsString(Result.error(40101, "未登录或登录已过期")));
