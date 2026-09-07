@@ -9,7 +9,7 @@ package com.iteleme.backend.config;
 //       @ControllerAdvice 的 @ExceptionHandler 接住，只能自行写响应）。
 //       OPTIONS 预检请求（CORS）不鉴权，直接放行。
 // ============================================================
-import com.iteleme.backend.entity.Result;
+import com.iteleme.backend.common.Result;
 import com.iteleme.backend.mapper.UserMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

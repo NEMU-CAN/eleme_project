@@ -1,6 +1,6 @@
 package com.iteleme.backend.exception;
 
-import com.iteleme.backend.entity.Result;
+import com.iteleme.backend.common.Result;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;

@@ -1,4 +1,4 @@
-package com.iteleme.backend.entity;
+package com.iteleme.backend.common;
 
 import lombok.Data;
 
