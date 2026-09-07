@@ -1,13 +1,15 @@
 package com.iteleme.backend.config;
 
 // ============================================================
-// [阶段① 新增] 鉴权拦截器
+// [阶段② 新增] 鉴权拦截器（强制模式）
 // 说明：解析 Authorization: Bearer <token>，把 token 里的 userId 覆盖进路径变量 Map
 //       （HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE），这样控制器 @PathVariable String userId
 //       自动拿到 token 身份（token 优先），鉴权逻辑收拢到此处，控制器无需感知 token。
-//       阶段①为兼容模式：无有效 token 时不拦截，回落路径 userId，仅打一条警告日志。
-//       阶段②③ 收紧时，把 return true 的分支改为抛 401 即可。
+//       阶段②为强制模式：无有效 token 时直接写 401 响应并 return false（拦截器异常不会被
+//       @ControllerAdvice 的 @ExceptionHandler 接住，只能自行写响应）。
+//       OPTIONS 预检请求（CORS）不鉴权，直接放行。
 // ============================================================
+import com.iteleme.backend.entity.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -15,37 +17,45 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
+import tools.jackson.databind.ObjectMapper;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
 public class AuthInterceptor implements HandlerInterceptor {
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private final JwtUtil jwtUtil;
 
-    // public AuthInterceptor(JwtUtil jwtUtil) {
-    //     this.jwtUtil = jwtUtil;
-    // }
-
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
+        // CORS 预检请求（OPTIONS）不鉴权，直接放行
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
         String userId = null;
         String auth = request.getHeader("Authorization");
         if (auth != null && auth.startsWith("Bearer ")) {
             userId = jwtUtil.parseUserId(auth.substring(7));
         }
-        if (userId != null) {
-            // [阶段①] token 优先：覆盖路径变量 userId，控制器 @PathVariable userId 自动拿到 token 身份
-            Map<String, String> uriVars = (Map<String, String>) request.getAttribute(
-                    HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-            if (uriVars != null && uriVars.containsKey("userId")) {
-                uriVars.put("userId", userId);
-            }
-        } else {
-            // 阶段①兼容：未带有效 token，回落路径 userId（前端带 token 前不拦截）
-            System.out.println("[AuthInterceptor][deprecated] 请求未带有效 token，回落路径 userId: "
-                    + request.getRequestURI());
+        if (userId == null) {
+            // [阶段②] 强制鉴权：无有效 token → 401（拦截器异常不走 @ControllerAdvice，直接写响应）
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write(MAPPER.writeValueAsString(Result.error(40101, "未登录或登录已过期")));
+            return false;
+        }
+        // [阶段②] token 优先：把 token 里的 userId 覆盖进路径变量 Map（该 Map 不可变，需复制后替换）
+        Map<String, String> uriVars = (Map<String, String>) request.getAttribute(
+                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        if (uriVars != null && uriVars.containsKey("userId")) {
+            Map<String, String> copy = new HashMap<>(uriVars);
+            copy.put("userId", userId);
+            request.setAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, copy);
         }
         return true;
     }

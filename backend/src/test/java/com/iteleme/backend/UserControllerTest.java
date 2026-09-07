@@ -1,5 +1,6 @@
 package com.iteleme.backend;
 
+import com.iteleme.backend.config.JwtUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +21,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class UserControllerTest {
     @Autowired
     private MockMvc mockMvc;
+    // ===== [阶段② 新增] 生成鉴权 token =====
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    private String auth() {
+        return "Bearer " + jwtUtil.generateToken("11111111111");
+    }
+    // ===== [阶段② 新增结束] =====
 
     @Test
     @DisplayName("查询用户 - 返回 Result 包装的 UserVO")
     void getUserSuccess() throws Exception {
-        mockMvc.perform(get("/api/users/11111111111"))
+        mockMvc.perform(get("/api/users/11111111111").header("Authorization", auth()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(1))
                 .andExpect(jsonPath("$.msg").value("success"))
@@ -34,6 +43,17 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.data.delFlag").value(1))
                 .andExpect(jsonPath("$.data.password").doesNotExist());
     }
+
+    // ===== [阶段② 新增] 强制鉴权：无 token 访问受保护接口返回 401 =====
+    @Test
+    @DisplayName("查询用户 - 未带 token 返回401")
+    void getUserWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(get("/api/users/11111111111"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40101))
+                .andExpect(jsonPath("$.msg").value("未登录或登录已过期"));
+    }
+    // ===== [阶段② 新增结束] =====
 
     @Test
     @DisplayName("用户注册 - 首次注册成功返回201和 Result")

@@ -1,5 +1,6 @@
 package com.iteleme.backend;
 
+import com.iteleme.backend.config.JwtUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,16 +25,26 @@ class OrderControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+    // ===== [阶段② 新增] 生成鉴权 token =====
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    private String auth(String userId) {
+        return "Bearer " + jwtUtil.generateToken(userId);
+    }
+    // ===== [阶段② 新增结束] =====
 
     @Test
     @DisplayName("创建、查询订单 - 兼容原始 elm 数据库字段")
     void createAndQueryOrder() throws Exception {
         mockMvc.perform(post(CART_URL)
+                        .header("Authorization", auth(USER_ID))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"businessId\":10001,\"foodId\":1,\"quantity\":2}"))
                 .andExpect(status().isOk());
 
         String response = mockMvc.perform(post(ORDER_URL)
+                        .header("Authorization", auth(USER_ID))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"businessId\":10001,\"daId\":1}"))
                 .andExpect(status().isCreated())
@@ -53,16 +64,16 @@ class OrderControllerTest {
         int idEnd = response.indexOf(',', idStart);
         int orderId = Integer.parseInt(response.substring(idStart, idEnd));
 
-        mockMvc.perform(get(ORDER_URL).param("businessId", "10001").param("orderState", "0"))
+        mockMvc.perform(get(ORDER_URL).header("Authorization", auth(USER_ID)).param("businessId", "10001").param("orderState", "0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].id").value(orderId));
 
-        mockMvc.perform(get(ORDER_URL + "/" + orderId))
+        mockMvc.perform(get(ORDER_URL + "/" + orderId).header("Authorization", auth(USER_ID)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(orderId));
 
-        mockMvc.perform(get(CART_URL).param("businessId", "10001"))
+        mockMvc.perform(get(CART_URL).header("Authorization", auth(USER_ID)).param("businessId", "10001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isEmpty());
     }
@@ -71,6 +82,7 @@ class OrderControllerTest {
     @DisplayName("创建订单 - 购物车为空返回409")
     void createOrderWithEmptyCart() throws Exception {
         mockMvc.perform(post(ORDER_URL)
+                        .header("Authorization", auth(USER_ID))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"businessId\":10001,\"daId\":1}"))
                 .andExpect(status().isConflict())
@@ -82,11 +94,13 @@ class OrderControllerTest {
     @DisplayName("创建订单 - 收货地址不存在返回404")
     void createOrderWithMissingAddressReturns404() throws Exception {
         mockMvc.perform(post(CART_URL)
+                        .header("Authorization", auth(USER_ID))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"businessId\":10001,\"foodId\":1,\"quantity\":1}"))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post(ORDER_URL)
+                        .header("Authorization", auth(USER_ID))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"businessId\":10001,\"daId\":999999}"))
                 .andExpect(status().isNotFound())
@@ -98,6 +112,7 @@ class OrderControllerTest {
     @DisplayName("创建订单 - 商家不存在返回404")
     void createOrderWithMissingBusinessReturns404() throws Exception {
         mockMvc.perform(post(ORDER_URL)
+                        .header("Authorization", auth(USER_ID))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"businessId\":999999,\"daId\":1}"))
                 .andExpect(status().isNotFound())
@@ -107,7 +122,7 @@ class OrderControllerTest {
     @Test
     @DisplayName("订单详情 - 订单不存在返回404")
     void getOrderDetailNotFoundReturns404() throws Exception {
-        mockMvc.perform(get(ORDER_URL + "/999999"))
+        mockMvc.perform(get(ORDER_URL + "/999999").header("Authorization", auth(USER_ID)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(40401))
                 .andExpect(jsonPath("$.msg").value("资源不存在"));
@@ -116,7 +131,7 @@ class OrderControllerTest {
     @Test
     @DisplayName("订单列表 - 用户不存在返回404")
     void listOrdersUserNotFoundReturns404() throws Exception {
-        mockMvc.perform(get("/api/users/99999999999/orders"))
+        mockMvc.perform(get("/api/users/99999999999/orders").header("Authorization", auth("99999999999")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(40401));
     }
@@ -124,7 +139,7 @@ class OrderControllerTest {
     @Test
     @DisplayName("订单列表 - 无订单返回空数组")
     void listOrdersEmptyReturnsEmptyArray() throws Exception {
-        mockMvc.perform(get(ORDER_URL))
+        mockMvc.perform(get(ORDER_URL).header("Authorization", auth(USER_ID)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(1))
                 .andExpect(jsonPath("$.data").isArray())
@@ -134,7 +149,7 @@ class OrderControllerTest {
     @Test
     @DisplayName("订单列表 - orderState 非法值返回400")
     void listOrdersInvalidOrderStateReturns400() throws Exception {
-        mockMvc.perform(get(ORDER_URL).param("orderState", "2"))
+        mockMvc.perform(get(ORDER_URL).header("Authorization", auth(USER_ID)).param("orderState", "2"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(40001))
                 .andExpect(jsonPath("$.data[0].field").value("orderState"));
