@@ -13,4 +13,8 @@ public interface UserService {
     // ===== [阶段① 新增] 登录返回 token + 用户信息 =====
     LoginVO login(LoginRequest request);
     // ===== [阶段① 新增结束] =====
+
+    // ===== [第一步 新增] 退出登录（注销会话） =====
+    void logout(String userId);
+    // ===== [第一步 新增结束] =====
 }

@@ -90,6 +90,29 @@ public class UserServiceImpl implements UserService {
         // ===== [阶段① 新增结束] =====
     }
 
+    // ===== [第一步 新增] 退出登录（注销会话） =====
+    /**
+     * 退出登录：结束当前用户的登录会话。
+     */
+    @Override
+    public void logout(String userId) {
+        ServiceValidator.requireUserId(userId);
+        if (userMapper.findActiveById(userId) == null) {
+            throw ApiException.notFound();
+        }
+        // 失效机制留待第二步（token 鉴权问题）：当前仅保证框架可跑，注销接口已就位
+        invalidateTokens(userId);
+    }
+
+    /**
+     * 使该用户已签发的 token 失效。
+     * <p>[第二步] 实现：token 版本号（user.token_version 递增）或黑名单，使旧 token 立即失效。</p>
+     */
+    private void invalidateTokens(String userId) {
+        // TODO [第二步] 接入失效机制（token 版本号 / 黑名单），使该用户所有旧 token 立即失效
+    }
+    // ===== [第一步 新增结束] =====
+
     /**
      * 校验注册请求体。
      */
