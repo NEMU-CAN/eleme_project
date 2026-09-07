@@ -7,7 +7,6 @@ import com.iteleme.backend.exception.ApiException;
 import com.iteleme.backend.mapper.BusinessMapper;
 import com.iteleme.backend.mapper.CartMapper;
 import com.iteleme.backend.mapper.FoodMapper;
-import com.iteleme.backend.mapper.UserMapper;
 import com.iteleme.backend.service.CartService;
 import com.iteleme.backend.vo.CartItemVO;
 import com.iteleme.backend.vo.request.CartCreateRequest;
@@ -25,8 +24,8 @@ import java.util.List;
 public class CartServiceImpl implements CartService {
     /** 购物车表数据访问对象。 */
     private final CartMapper cartMapper;
-    /** 用户表数据访问对象。 */
-    private final UserMapper userMapper;
+    /** 用户校验器（纵深防御：确认用户存在且有效）。 */
+    private final UserValidator userValidator;
     /** 商家表数据访问对象。 */
     private final BusinessMapper businessMapper;
     /** 食品表数据访问对象。 */
@@ -37,7 +36,7 @@ public class CartServiceImpl implements CartService {
      */
     @Override
     public List<CartItemVO> listCartItems(String userId, Integer businessId) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         ServiceValidator.requireOptionalPositive(businessId, "businessId");
         return cartMapper.findByUserId(userId, businessId).stream()
                 .map(this::assembleCartItem)
@@ -49,7 +48,7 @@ public class CartServiceImpl implements CartService {
      */
     @Override
     public CartItemVO upsertCartItem(String userId, CartCreateRequest request) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         validateCreateRequest(request);
 
         Business business = businessMapper.findById(request.getBusinessId());
@@ -80,7 +79,7 @@ public class CartServiceImpl implements CartService {
      */
     @Override
     public CartItemVO updateCartItemQuantity(String userId, Integer cartId, CartUpdateRequest request) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         ServiceValidator.requirePositive(cartId, "cartId");
         if (request == null) {
             throw ApiException.badRequest("body", "请求体不能为空");
@@ -101,7 +100,7 @@ public class CartServiceImpl implements CartService {
      */
     @Override
     public void deleteCartItemsByFilter(String userId, Integer businessId, Integer foodId) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         ServiceValidator.requireOptionalPositive(businessId, "businessId");
         ServiceValidator.requireOptionalPositive(foodId, "foodId");
         cartMapper.deleteByFilter(userId, businessId, foodId);
@@ -112,7 +111,7 @@ public class CartServiceImpl implements CartService {
      */
     @Override
     public void deleteCartItem(String userId, Integer cartId) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         ServiceValidator.requirePositive(cartId, "cartId");
         if (cartMapper.findByIdForUser(userId, cartId) == null) {
             throw ApiException.notFound();
@@ -144,15 +143,5 @@ public class CartServiceImpl implements CartService {
         Business business = businessMapper.findById(cart.getBusinessId());
         Food food = foodMapper.findById(cart.getFoodId());
         return VoConverters.toCartItemVO(cart, business, food);
-    }
-
-    /**
-     * 确认用户存在且处于正常状态。
-     */
-    private void ensureActiveUser(String userId) {
-        ServiceValidator.requireUserId(userId);
-        if (userMapper.findActiveById(userId) == null) {
-            throw ApiException.notFound();
-        }
     }
 }
