@@ -1,6 +1,6 @@
 package com.iteleme.backend.controller;
 
-import com.iteleme.backend.entity.Result;
+import com.iteleme.backend.common.Result;
 import com.iteleme.backend.service.CartService;
 import com.iteleme.backend.vo.request.CartCreateRequest;
 import com.iteleme.backend.vo.request.CartUpdateRequest;
