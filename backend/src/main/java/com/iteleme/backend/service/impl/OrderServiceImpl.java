@@ -3,19 +3,16 @@ package com.iteleme.backend.service.impl;
 import com.iteleme.backend.entity.Business;
 import com.iteleme.backend.entity.Cart;
 import com.iteleme.backend.entity.DeliveryAddress;
-import com.iteleme.backend.entity.Food;
 import com.iteleme.backend.entity.Order;
 import com.iteleme.backend.entity.OrderDetail;
 import com.iteleme.backend.exception.ApiException;
 import com.iteleme.backend.mapper.BusinessMapper;
 import com.iteleme.backend.mapper.CartMapper;
 import com.iteleme.backend.mapper.DeliveryAddressMapper;
-import com.iteleme.backend.mapper.FoodMapper;
 import com.iteleme.backend.mapper.OrderDetailMapper;
 import com.iteleme.backend.mapper.OrderMapper;
 import com.iteleme.backend.mapper.UserMapper;
 import com.iteleme.backend.service.OrderService;
-import com.iteleme.backend.vo.OrderItemVO;
 import com.iteleme.backend.vo.OrderVO;
 import com.iteleme.backend.vo.request.OrderCreateRequest;
 import lombok.RequiredArgsConstructor;
@@ -46,10 +43,14 @@ public class OrderServiceImpl implements OrderService {
     private final UserMapper userMapper;
     /** 商家表数据访问对象。 */
     private final BusinessMapper businessMapper;
-    /** 食品表数据访问对象。 */
-    private final FoodMapper foodMapper;
     /** 送货地址表数据访问对象。 */
     private final DeliveryAddressMapper deliveryAddressMapper;
+    // ===== [重构] 拆出的两个组件：组装 + 计价 =====
+    /** 订单 VO 组装器。 */
+    private final OrderAssembler orderAssembler;
+    /** 订单金额计算器。 */
+    private final OrderPriceCalculator orderPriceCalculator;
+    // ===== [重构结束] =====
 
     /**
      * 查询用户订单列表。
@@ -60,7 +61,7 @@ public class OrderServiceImpl implements OrderService {
         ServiceValidator.requireOptionalPositive(businessId, "businessId");
         ServiceValidator.requireOptionalZeroOrOne(orderState, "orderState");
         return orderMapper.findByUserId(userId, businessId, orderState).stream()
-                .map(this::assembleOrder)
+                .map(orderAssembler::assemble)
                 .toList();
     }
 
@@ -84,23 +85,11 @@ public class OrderServiceImpl implements OrderService {
             throw ApiException.conflict("cart", "购物车为空，无法创建订单");
         }
 
-        BigDecimal foodTotal = BigDecimal.ZERO;
-        for (Cart cartItem : cartItems) {
-            Food food = foodMapper.findByIdAndBusinessId(cartItem.getFoodId(), request.getBusinessId());
-            if (food == null) {
-                throw ApiException.notFound();
-            }
-            foodTotal = foodTotal.add(food.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
-        }
-
-        // 起送门槛校验：菜品总价必须达到起送费
-        if (business.getStartPrice() != null && foodTotal.compareTo(business.getStartPrice()) < 0) {
-            throw ApiException.conflict("businessId", "未达起送金额 " + business.getStartPrice());
-        }
-
-        // 订单总价 = 菜品总价 + 配送费
-        BigDecimal orderTotal = foodTotal.add(
-                business.getDeliveryPrice() == null ? BigDecimal.ZERO : business.getDeliveryPrice());
+        // ===== [重构] 计价逻辑移到 OrderPriceCalculator =====
+        BigDecimal foodTotal = orderPriceCalculator.foodTotal(cartItems, request.getBusinessId());
+        orderPriceCalculator.ensureMeetStartPrice(business, foodTotal);
+        BigDecimal orderTotal = orderPriceCalculator.orderTotal(business, foodTotal);
+        // ===== [重构结束] =====
 
         Order order = new Order();
         order.setUserId(userId);
@@ -121,7 +110,7 @@ public class OrderServiceImpl implements OrderService {
         cartMapper.deleteByFilter(userId, request.getBusinessId(), null);
 
         Order created = orderMapper.findByIdForUser(userId, order.getId());
-        return assembleOrder(created);
+        return orderAssembler.assemble(created);
     }
 
     /**
@@ -135,7 +124,7 @@ public class OrderServiceImpl implements OrderService {
         if (order == null) {
             throw ApiException.notFound();
         }
-        return assembleOrder(order);
+        return orderAssembler.assemble(order);
     }
 
     /**
@@ -163,7 +152,7 @@ public class OrderServiceImpl implements OrderService {
             throw ApiException.conflict("orderId", "订单状态已发生变化，请重试");
         }
 
-        return assembleOrder(orderMapper.findByIdForUser(userId, orderId));
+        return orderAssembler.assemble(orderMapper.findByIdForUser(userId, orderId));
     }
 
     /**
@@ -175,20 +164,6 @@ public class OrderServiceImpl implements OrderService {
         }
         ServiceValidator.requirePositive(request.getBusinessId(), "businessId");
         ServiceValidator.requirePositive(request.getDaId(), "daId");
-    }
-
-    /**
-     * 组装订单展示对象。
-     */
-    private OrderVO assembleOrder(Order order) {
-        Business business = businessMapper.findById(order.getBusinessId());
-        DeliveryAddress deliveryAddress = deliveryAddressMapper.findByIdForUser(order.getUserId(), order.getAddressId());
-        OrderVO vo = VoConverters.toOrderVO(order, business, deliveryAddress);
-        List<OrderItemVO> items = orderDetailMapper.findByOrderId(order.getId()).stream()
-                .map(orderDetail -> VoConverters.toOrderItemVO(orderDetail, foodMapper.findById(orderDetail.getFoodId())))
-                .toList();
-        vo.setItems(items);
-        return vo;
     }
 
     /**
