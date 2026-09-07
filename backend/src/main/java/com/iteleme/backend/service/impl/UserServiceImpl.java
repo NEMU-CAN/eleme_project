@@ -6,6 +6,8 @@ import com.iteleme.backend.entity.User;
 import com.iteleme.backend.exception.ApiException;
 import com.iteleme.backend.mapper.UserMapper;
 import com.iteleme.backend.service.UserService;
+import com.iteleme.backend.service.support.TokenInvalidator;
+import com.iteleme.backend.service.support.UserValidator;
 import com.iteleme.backend.vo.LoginVO;
 import com.iteleme.backend.vo.UserVO;
 import com.iteleme.backend.vo.request.LoginRequest;
@@ -30,6 +32,12 @@ public class UserServiceImpl implements UserService {
     // ===== [阶段① 新增] JWT token 工具 =====
     private final JwtUtil jwtUtil;
     // ===== [阶段① 新增结束] =====
+    // ===== [第一步 新增] 协作组件：用户校验 + token 失效 =====
+    /** 用户校验器（纵深防御：确认用户存在且有效）。 */
+    private final UserValidator userValidator;
+    /** token 失效器（注销时使旧 token 失效，第二步接入机制）。 */
+    private final TokenInvalidator tokenInvalidator;
+    // ===== [第一步 新增结束] =====
 
     /**
      * 查询用户信息。
@@ -96,20 +104,8 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public void logout(String userId) {
-        ServiceValidator.requireUserId(userId);
-        if (userMapper.findActiveById(userId) == null) {
-            throw ApiException.notFound();
-        }
-        // 失效机制留待第二步（token 鉴权问题）：当前仅保证框架可跑，注销接口已就位
-        invalidateTokens(userId);
-    }
-
-    /**
-     * 使该用户已签发的 token 失效。
-     * <p>[第二步] 实现：token 版本号（user.token_version 递增）或黑名单，使旧 token 立即失效。</p>
-     */
-    private void invalidateTokens(String userId) {
-        // TODO [第二步] 接入失效机制（token 版本号 / 黑名单），使该用户所有旧 token 立即失效
+        userValidator.requireActive(userId);
+        tokenInvalidator.invalidate(userId);
     }
     // ===== [第一步 新增结束] =====
 
