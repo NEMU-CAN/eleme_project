@@ -1,14 +1,13 @@
-package com.iteleme.backend.service.impl;
+package com.iteleme.backend.service.support;
 
+import com.iteleme.backend.common.ServiceValidator;
 import com.iteleme.backend.exception.ApiException;
 import com.iteleme.backend.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 // ============================================================
-// [重构] 用户校验器：收拢"用户存在且处于正常状态"的校验
-// 说明：受保护接口的 AuthInterceptor 已校验用户状态，此处作为服务层兜底（防御纵深），
-//       避免业务服务各自重复实现同一段校验逻辑。
+// [重构] 用户校验器：收拢"用户存在且处于正常状态"的校验（纵深防御）
 // ============================================================
 @Component
 @RequiredArgsConstructor

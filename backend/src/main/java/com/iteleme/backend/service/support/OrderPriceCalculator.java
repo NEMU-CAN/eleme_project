@@ -1,4 +1,4 @@
-package com.iteleme.backend.service.impl;
+package com.iteleme.backend.service.support;
 
 import com.iteleme.backend.entity.Business;
 import com.iteleme.backend.entity.Cart;
@@ -12,8 +12,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 // ============================================================
-// [重构] 从 OrderServiceImpl 拆出：订单金额计算器
-// 职责：计算菜品总价、校验起送门槛、计算订单总价（菜品总价 + 配送费）。
+// [重构] 订单金额计算器：计算菜品总价、校验起送门槛、计算订单总价
 // ============================================================
 @Component
 @RequiredArgsConstructor

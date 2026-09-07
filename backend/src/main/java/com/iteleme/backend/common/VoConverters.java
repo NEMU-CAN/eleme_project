@@ -1,4 +1,4 @@
-package com.iteleme.backend.service.impl;
+package com.iteleme.backend.common;
 
 import com.iteleme.backend.entity.Business;
 import com.iteleme.backend.entity.Cart;
@@ -18,14 +18,14 @@ import com.iteleme.backend.vo.UserVO;
 /**
  * 实体与 VO 的转换工具类。
  */
-final class VoConverters {
+public final class VoConverters {
     private VoConverters() {
     }
 
     /**
      * 将商家实体转换为对外展示对象。
      */
-    static BusinessVO toBusinessVO(Business business) {
+    public static BusinessVO toBusinessVO(Business business) {
         if (business == null) {
             return null;
         }
@@ -45,7 +45,7 @@ final class VoConverters {
     /**
      * 将食品实体转换为对外展示对象。
      */
-    static FoodVO toFoodVO(Food food) {
+    public static FoodVO toFoodVO(Food food) {
         if (food == null) {
             return null;
         }
@@ -63,7 +63,7 @@ final class VoConverters {
     /**
      * 将购物车实体和关联信息转换为对外展示对象。
      */
-    static CartItemVO toCartItemVO(Cart cart, Business business, Food food) {
+    public static CartItemVO toCartItemVO(Cart cart, Business business, Food food) {
         CartItemVO vo = new CartItemVO();
         vo.setId(cart.getId());
         vo.setUserId(cart.getUserId());
@@ -78,7 +78,7 @@ final class VoConverters {
     /**
      * 将送货地址实体转换为对外展示对象。
      */
-    static DeliveryAddressVO toDeliveryAddressVO(DeliveryAddress deliveryAddress) {
+    public static DeliveryAddressVO toDeliveryAddressVO(DeliveryAddress deliveryAddress) {
         if (deliveryAddress == null) {
             return null;
         }
@@ -95,7 +95,7 @@ final class VoConverters {
     /**
      * 将订单明细实体转换为对外展示对象。
      */
-    static OrderItemVO toOrderItemVO(OrderDetail orderDetail, Food food) {
+    public static OrderItemVO toOrderItemVO(OrderDetail orderDetail, Food food) {
         OrderItemVO vo = new OrderItemVO();
         vo.setId(orderDetail.getId());
         vo.setOrderId(orderDetail.getOrderId());
@@ -108,7 +108,7 @@ final class VoConverters {
     /**
      * 将订单实体和关联信息转换为对外展示对象。
      */
-    static OrderVO toOrderVO(Order order, Business business, DeliveryAddress deliveryAddress) {
+    public static OrderVO toOrderVO(Order order, Business business, DeliveryAddress deliveryAddress) {
         OrderVO vo = new OrderVO();
         vo.setId(order.getId());
         vo.setUserId(order.getUserId());
@@ -125,7 +125,7 @@ final class VoConverters {
     /**
      * 将用户实体转换为对外展示对象。
      */
-    static UserVO toUserVO(User user) {
+    public static UserVO toUserVO(User user) {
         if (user == null) {
             return null;
         }

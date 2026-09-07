@@ -1,17 +1,16 @@
 package com.iteleme.backend.service.impl;
 
-import com.iteleme.backend.entity.Business;
-import com.iteleme.backend.entity.Cart;
-import com.iteleme.backend.entity.DeliveryAddress;
+import com.iteleme.backend.common.ServiceValidator;
 import com.iteleme.backend.entity.Order;
-import com.iteleme.backend.entity.OrderDetail;
 import com.iteleme.backend.exception.ApiException;
-import com.iteleme.backend.mapper.BusinessMapper;
-import com.iteleme.backend.mapper.CartMapper;
-import com.iteleme.backend.mapper.DeliveryAddressMapper;
-import com.iteleme.backend.mapper.OrderDetailMapper;
 import com.iteleme.backend.mapper.OrderMapper;
 import com.iteleme.backend.service.OrderService;
+import com.iteleme.backend.service.support.OrderAssembler;
+import com.iteleme.backend.service.support.OrderContext;
+import com.iteleme.backend.service.support.OrderPriceCalculator;
+import com.iteleme.backend.service.support.OrderValidator;
+import com.iteleme.backend.service.support.OrderWriter;
+import com.iteleme.backend.service.support.UserValidator;
 import com.iteleme.backend.vo.OrderVO;
 import com.iteleme.backend.vo.request.OrderCreateRequest;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -29,26 +26,19 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
-    /** 订单日期格式。 */
-    private static final DateTimeFormatter ORDER_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     /** 订单表数据访问对象。 */
     private final OrderMapper orderMapper;
-    /** 订单明细表数据访问对象。 */
-    private final OrderDetailMapper orderDetailMapper;
-    /** 购物车表数据访问对象。 */
-    private final CartMapper cartMapper;
+    // ===== [重构] 协作组件：校验/加载/计价/写库/组装 =====
     /** 用户校验器（纵深防御：确认用户存在且有效）。 */
     private final UserValidator userValidator;
-    /** 商家表数据访问对象。 */
-    private final BusinessMapper businessMapper;
-    /** 送货地址表数据访问对象。 */
-    private final DeliveryAddressMapper deliveryAddressMapper;
-    // ===== [重构] 拆出的两个组件：组装 + 计价 =====
-    /** 订单 VO 组装器。 */
-    private final OrderAssembler orderAssembler;
+    /** 下单前置校验器（加载并校验商家/地址/购物车）。 */
+    private final OrderValidator orderValidator;
     /** 订单金额计算器。 */
     private final OrderPriceCalculator orderPriceCalculator;
+    /** 订单写入器（建订单+插明细+删购物车）。 */
+    private final OrderWriter orderWriter;
+    /** 订单 VO 组装器。 */
+    private final OrderAssembler orderAssembler;
     // ===== [重构结束] =====
 
     /**
@@ -73,42 +63,12 @@ public class OrderServiceImpl implements OrderService {
         userValidator.requireActive(userId);
         validateCreateRequest(request);
 
-        Business business = businessMapper.findById(request.getBusinessId());
-        DeliveryAddress deliveryAddress = deliveryAddressMapper.findByIdForUser(userId, request.getDaId());
-        if (business == null || deliveryAddress == null) {
-            throw ApiException.notFound();
-        }
+        OrderContext ctx = orderValidator.validate(userId, request);
+        BigDecimal foodTotal = orderPriceCalculator.foodTotal(ctx.cartItems(), request.getBusinessId());
+        orderPriceCalculator.ensureMeetStartPrice(ctx.business(), foodTotal);
+        BigDecimal orderTotal = orderPriceCalculator.orderTotal(ctx.business(), foodTotal);
 
-        List<Cart> cartItems = cartMapper.findByUserId(userId, request.getBusinessId());
-        if (cartItems.isEmpty()) {
-            throw ApiException.conflict("cart", "购物车为空，无法创建订单");
-        }
-
-        // ===== [重构] 计价逻辑移到 OrderPriceCalculator =====
-        BigDecimal foodTotal = orderPriceCalculator.foodTotal(cartItems, request.getBusinessId());
-        orderPriceCalculator.ensureMeetStartPrice(business, foodTotal);
-        BigDecimal orderTotal = orderPriceCalculator.orderTotal(business, foodTotal);
-        // ===== [重构结束] =====
-
-        Order order = new Order();
-        order.setUserId(userId);
-        order.setBusinessId(request.getBusinessId());
-        order.setOrderDate(LocalDateTime.now().format(ORDER_DATE_FORMATTER));
-        order.setOrderTotal(orderTotal);
-        order.setAddressId(request.getDaId());
-        order.setOrderStatus(0);
-        orderMapper.insert(order);
-
-        for (Cart cartItem : cartItems) {
-            OrderDetail orderDetail = new OrderDetail();
-            orderDetail.setOrderId(order.getId());
-            orderDetail.setFoodId(cartItem.getFoodId());
-            orderDetail.setQuantity(cartItem.getQuantity());
-            orderDetailMapper.insert(orderDetail);
-        }
-        cartMapper.deleteByFilter(userId, request.getBusinessId(), null);
-
-        Order created = orderMapper.findByIdForUser(userId, order.getId());
+        Order created = orderWriter.write(userId, request, orderTotal, ctx.cartItems());
         return orderAssembler.assemble(created);
     }
 

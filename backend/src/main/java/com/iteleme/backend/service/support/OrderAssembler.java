@@ -1,5 +1,6 @@
-package com.iteleme.backend.service.impl;
+package com.iteleme.backend.service.support;
 
+import com.iteleme.backend.common.VoConverters;
 import com.iteleme.backend.entity.Business;
 import com.iteleme.backend.entity.DeliveryAddress;
 import com.iteleme.backend.entity.Order;
@@ -15,8 +16,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 // ============================================================
-// [重构] 从 OrderServiceImpl 拆出：订单 VO 组装器
-// 职责：把 Order 实体组装成给前端展示的 OrderVO（拉商家、收货地址、订单明细、食品）。
+// [重构] 订单 VO 组装器：把 Order 实体组装成给前端展示的 OrderVO
 // ============================================================
 @Component
 @RequiredArgsConstructor
