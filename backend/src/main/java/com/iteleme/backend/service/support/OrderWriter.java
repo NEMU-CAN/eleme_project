@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 // ============================================================
 // [重构] 订单写入器：建订单 + 插明细 + 删购物车（下单写库部分）
@@ -32,21 +31,27 @@ public class OrderWriter {
     private final CartMapper cartMapper;
 
     /**
-     * 写入订单：建订单（状态 0=未支付）、逐条插入订单明细、清空该商家购物车。
+     * 写入订单：建订单（状态 0=未支付）、写入收货地址快照、逐条插入订单明细、清空该商家购物车。
      *
      * @return 已写入的订单（含自增 id）
      */
-    public Order write(String userId, OrderCreateRequest request, BigDecimal orderTotal, List<Cart> cartItems) {
+    public Order write(String userId, OrderCreateRequest request, BigDecimal orderTotal, OrderContext ctx) {
         Order order = new Order();
         order.setUserId(userId);
         order.setBusinessId(request.getBusinessId());
         order.setOrderDate(LocalDateTime.now().format(ORDER_DATE_FORMATTER));
         order.setOrderTotal(orderTotal);
         order.setAddressId(request.getDaId());
+        // ===== [重构] 收货地址快照：下单时复制一份地址，订单展示不依赖地址行 =====
+        order.setAddressContactName(ctx.address().getContactName());
+        order.setAddressContactSex(ctx.address().getContactSex());
+        order.setAddressContactTel(ctx.address().getContactTel());
+        order.setAddressDetail(ctx.address().getAddress());
+        // ===== [重构结束] =====
         order.setOrderStatus(0);
         orderMapper.insert(order);
 
-        for (Cart cartItem : cartItems) {
+        for (Cart cartItem : ctx.cartItems()) {
             OrderDetail orderDetail = new OrderDetail();
             orderDetail.setOrderId(order.getId());
             orderDetail.setFoodId(cartItem.getFoodId());

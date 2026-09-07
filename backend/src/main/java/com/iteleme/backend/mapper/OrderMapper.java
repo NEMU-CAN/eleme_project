@@ -26,6 +26,10 @@ public interface OrderMapper {
                    order_date AS orderDate,
                    order_total AS orderTotal,
                    address_id AS addressId,
+                   address_contact_name AS addressContactName,
+                   address_contact_sex AS addressContactSex,
+                   address_contact_tel AS addressContactTel,
+                   address_detail AS addressDetail,
                    order_status AS orderStatus
             FROM orders
             WHERE user_id = #{userId} AND id = #{orderId}
@@ -34,8 +38,12 @@ public interface OrderMapper {
 
     /** 新增订单。 */
     @Insert("""
-            INSERT INTO orders(user_id, business_id, order_date, order_total, address_id, order_status)
-            VALUES (#{userId}, #{businessId}, #{orderDate}, #{orderTotal}, #{addressId}, #{orderStatus})
+            INSERT INTO orders(user_id, business_id, order_date, order_total, address_id,
+                               address_contact_name, address_contact_sex, address_contact_tel, address_detail,
+                               order_status)
+            VALUES (#{userId}, #{businessId}, #{orderDate}, #{orderTotal}, #{addressId},
+                    #{addressContactName}, #{addressContactSex}, #{addressContactTel}, #{addressDetail},
+                    #{orderStatus})
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     int insert(Order order);

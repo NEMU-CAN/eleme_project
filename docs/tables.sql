@@ -62,6 +62,10 @@ CREATE TABLE `orders` (
   `order_date` varchar(20) NOT NULL COMMENT '订购日期',
   `order_total` decimal(7,2) NOT NULL DEFAULT '0.00' COMMENT '订单总价',
   `address_id` int(11) NOT NULL COMMENT '送货地址编号',
+  `address_contact_name` varchar(20) DEFAULT NULL COMMENT '下单时收货人姓名快照',
+  `address_contact_sex` int(11) DEFAULT NULL COMMENT '下单时收货人性别快照',
+  `address_contact_tel` varchar(20) DEFAULT NULL COMMENT '下单时收货人电话快照',
+  `address_detail` varchar(100) DEFAULT NULL COMMENT '下单时收货地址快照',
   `order_status` int(11) NOT NULL DEFAULT '0' COMMENT '订单状态（0：未支付； 1：已支付）',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;

@@ -10,6 +10,10 @@
                order_date AS orderDate,
                order_total AS orderTotal,
                address_id AS addressId,
+               address_contact_name AS addressContactName,
+               address_contact_sex AS addressContactSex,
+               address_contact_tel AS addressContactTel,
+               address_detail AS addressDetail,
                order_status AS orderStatus
         FROM orders
         WHERE user_id = #{userId}
