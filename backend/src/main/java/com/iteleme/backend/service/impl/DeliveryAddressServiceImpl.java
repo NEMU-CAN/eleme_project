@@ -3,7 +3,6 @@ package com.iteleme.backend.service.impl;
 import com.iteleme.backend.entity.DeliveryAddress;
 import com.iteleme.backend.exception.ApiException;
 import com.iteleme.backend.mapper.DeliveryAddressMapper;
-import com.iteleme.backend.mapper.UserMapper;
 import com.iteleme.backend.service.DeliveryAddressService;
 import com.iteleme.backend.vo.DeliveryAddressVO;
 import com.iteleme.backend.vo.request.DeliveryAddressRequest;
@@ -20,15 +19,15 @@ import java.util.List;
 public class DeliveryAddressServiceImpl implements DeliveryAddressService {
     /** 送货地址表数据访问对象。 */
     private final DeliveryAddressMapper deliveryAddressMapper;
-    /** 用户表数据访问对象。 */
-    private final UserMapper userMapper;
+    /** 用户校验器（纵深防御：确认用户存在且有效）。 */
+    private final UserValidator userValidator;
 
     /**
      * 查询用户地址列表。
      */
     @Override
     public List<DeliveryAddressVO> listDeliveryAddressesByUserId(String userId) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         return deliveryAddressMapper.findByUserId(userId).stream()
                 .map(VoConverters::toDeliveryAddressVO)
                 .toList();
@@ -39,7 +38,7 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
      */
     @Override
     public DeliveryAddressVO getDeliveryAddressById(String userId, Integer daId) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         ServiceValidator.requirePositive(daId, "daId");
         DeliveryAddress deliveryAddress = deliveryAddressMapper.findByIdForUser(userId, daId);
         if (deliveryAddress == null) {
@@ -53,7 +52,7 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
      */
     @Override
     public DeliveryAddressVO createDeliveryAddress(String userId, DeliveryAddressRequest request) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         validateRequest(request);
 
         DeliveryAddress deliveryAddress = new DeliveryAddress();
@@ -71,7 +70,7 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
      */
     @Override
     public DeliveryAddressVO updateDeliveryAddress(String userId, Integer daId, DeliveryAddressRequest request) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         ServiceValidator.requirePositive(daId, "daId");
         validateRequest(request);
         if (deliveryAddressMapper.findByIdForUser(userId, daId) == null) {
@@ -94,7 +93,7 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
      */
     @Override
     public void deleteDeliveryAddress(String userId, Integer daId) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         ServiceValidator.requirePositive(daId, "daId");
         if (deliveryAddressMapper.findByIdForUser(userId, daId) == null) {
             throw ApiException.notFound();
@@ -119,15 +118,5 @@ public class DeliveryAddressServiceImpl implements DeliveryAddressService {
         ServiceValidator.requireMaxLength(request.getContactTel(), "contactTel", 20);
         ServiceValidator.requireNonBlank(request.getAddress(), "address");
         ServiceValidator.requireMaxLength(request.getAddress(), "address", 100);
-    }
-
-    /**
-     * 确认用户存在且处于正常状态。
-     */
-    private void ensureActiveUser(String userId) {
-        ServiceValidator.requireUserId(userId);
-        if (userMapper.findActiveById(userId) == null) {
-            throw ApiException.notFound();
-        }
     }
 }

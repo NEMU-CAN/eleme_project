@@ -11,7 +11,6 @@ import com.iteleme.backend.mapper.CartMapper;
 import com.iteleme.backend.mapper.DeliveryAddressMapper;
 import com.iteleme.backend.mapper.OrderDetailMapper;
 import com.iteleme.backend.mapper.OrderMapper;
-import com.iteleme.backend.mapper.UserMapper;
 import com.iteleme.backend.service.OrderService;
 import com.iteleme.backend.vo.OrderVO;
 import com.iteleme.backend.vo.request.OrderCreateRequest;
@@ -39,8 +38,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderDetailMapper orderDetailMapper;
     /** 购物车表数据访问对象。 */
     private final CartMapper cartMapper;
-    /** 用户表数据访问对象。 */
-    private final UserMapper userMapper;
+    /** 用户校验器（纵深防御：确认用户存在且有效）。 */
+    private final UserValidator userValidator;
     /** 商家表数据访问对象。 */
     private final BusinessMapper businessMapper;
     /** 送货地址表数据访问对象。 */
@@ -57,7 +56,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public List<OrderVO> listOrdersByUserId(String userId, Integer businessId, Integer orderState) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         ServiceValidator.requireOptionalPositive(businessId, "businessId");
         ServiceValidator.requireOptionalZeroOrOne(orderState, "orderState");
         return orderMapper.findByUserId(userId, businessId, orderState).stream()
@@ -71,7 +70,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderVO createOrder(String userId, OrderCreateRequest request) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         validateCreateRequest(request);
 
         Business business = businessMapper.findById(request.getBusinessId());
@@ -118,7 +117,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public OrderVO getOrderById(String userId, Integer orderId) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         ServiceValidator.requirePositive(orderId, "orderId");
         Order order = orderMapper.findByIdForUser(userId, orderId);
         if (order == null) {
@@ -133,7 +132,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderVO payOrder(String userId, Integer orderId) {
-        ensureActiveUser(userId);
+        userValidator.requireActive(userId);
         ServiceValidator.requirePositive(orderId, "orderId");
 
         Order order = orderMapper.findByIdForUser(userId, orderId);
@@ -164,15 +163,5 @@ public class OrderServiceImpl implements OrderService {
         }
         ServiceValidator.requirePositive(request.getBusinessId(), "businessId");
         ServiceValidator.requirePositive(request.getDaId(), "daId");
-    }
-
-    /**
-     * 确认用户存在且处于正常状态。
-     */
-    private void ensureActiveUser(String userId) {
-        ServiceValidator.requireUserId(userId);
-        if (userMapper.findActiveById(userId) == null) {
-            throw ApiException.notFound();
-        }
     }
 }
