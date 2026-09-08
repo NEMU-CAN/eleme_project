@@ -107,6 +107,9 @@ public class UserServiceImpl implements UserService {
         }
         // ===== [阶段① 新增] 登录成功生成 token =====
         String token = jwtUtil.generateToken(user.getId());
+        // ===== [第二步 新增] 单会话：写入当前 token 哈希（新登录覆盖旧值 → 旧设备 token 立即失效） =====
+        userMapper.updateCurrentTokenHash(user.getId(), jwtUtil.hashToken(token));
+        // ===== [第二步 新增结束] =====
         return new LoginVO(token, VoConverters.toUserVO(user));
         // ===== [阶段① 新增结束] =====
     }
@@ -124,7 +127,8 @@ public class UserServiceImpl implements UserService {
 
     // ===== [第一步 新增] 删除账户（软删，del_flag=0） =====
     /**
-     * 删除账户：软删（del_flag=0）。该用户所有 token 立即失效（拦截器按 del_flag 校验）。
+     * 删除账户：软删（del_flag=0）。该用户所有 token 立即失效
+     * （拦截器按 del_flag 校验；markAsDeleted 同时清空 token 哈希，防重注册后旧 token 复活）。
      */
     @Override
     public void deleteAccount(String userId) {

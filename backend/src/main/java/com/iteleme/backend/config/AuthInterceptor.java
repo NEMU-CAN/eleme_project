@@ -10,6 +10,7 @@ package com.iteleme.backend.config;
 //       OPTIONS 预检请求（CORS）不鉴权，直接放行。
 // ============================================================
 import com.iteleme.backend.common.Result;
+import com.iteleme.backend.entity.User;
 import com.iteleme.backend.mapper.UserMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,6 +23,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -40,9 +42,11 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
         String userId = null;
+        String token = null;
         String auth = request.getHeader("Authorization");
         if (auth != null && auth.startsWith("Bearer ")) {
-            userId = jwtUtil.parseUserId(auth.substring(7));
+            token = auth.substring(7);
+            userId = jwtUtil.parseUserId(token);
         }
         if (userId == null) {
             // [阶段②] 强制鉴权：无有效 token → 401（拦截器异常不走 @ControllerAdvice，直接写响应）
@@ -52,12 +56,22 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
         // [阶段②] 用户状态校验：用户不存在或已删除（del_flag != 1）→ 视为未登录
-        if (userMapper.findActiveById(userId) == null) {
+        User user = userMapper.findActiveById(userId);
+        if (user == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(MAPPER.writeValueAsString(Result.error(40101, "未登录或登录已过期")));
             return false;
         }
+        // ===== [第二步 新增] 单会话校验：token 哈希必须等于当前有效 token 哈希 =====
+        // 登录时写入 current_token_hash；注销/删除时清空 → 旧 token 立即失效（无需等待过期）。
+        if (!Objects.equals(user.getCurrentTokenHash(), jwtUtil.hashToken(token))) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write(MAPPER.writeValueAsString(Result.error(40101, "未登录或登录已过期")));
+            return false;
+        }
+        // ===== [第二步 新增结束] =====
         // [阶段②] token 优先：把 token 里的 userId 覆盖进路径变量 Map（该 Map 不可变，需复制后替换）
         Map<String, String> uriVars = (Map<String, String>) request.getAttribute(
                 HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);

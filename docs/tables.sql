@@ -78,5 +78,6 @@ CREATE TABLE `user` (
   `sex` int(11) NOT NULL DEFAULT '1' COMMENT '用户性别（1：男； 0：女）',
   `avatar` mediumtext COMMENT '用户头像',
   `del_flag` int(1) NOT NULL DEFAULT '1' COMMENT '删除标记（1：正常； 0：删除）',
+  `current_token_hash` varchar(64) DEFAULT NULL COMMENT '当前有效 token 的哈希（登录写入，注销/删除清空；单会话）',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
