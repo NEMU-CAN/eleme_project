@@ -1,6 +1,7 @@
 package com.iteleme.backend;
 
 import com.iteleme.backend.config.JwtUtil;
+import com.iteleme.backend.mapper.UserMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,11 +29,16 @@ class DeliveryAddressControllerTest {
     // ===== [阶段② 新增] 生成鉴权 token =====
     @Autowired
     private JwtUtil jwtUtil;
+    // ===== [第二步 新增] 单会话：测试 token 需写入 current_token_hash，否则拦截器按哈希校验拒绝 =====
+    @Autowired
+    private UserMapper userMapper;
 
     private String auth() {
-        return "Bearer " + jwtUtil.generateToken("11111111111");
+        String token = jwtUtil.generateToken("11111111111");
+        userMapper.updateCurrentTokenHash("11111111111", jwtUtil.hashToken(token));
+        return "Bearer " + token;
     }
-    // ===== [阶段② 新增结束] =====
+    // ===== [第二步 新增结束] =====
 
     @Test
     @DisplayName("查询地址列表 - 使用用户路径并返回 Result")

@@ -15,9 +15,10 @@ public class TokenInvalidator {
 
     /**
      * 使该用户所有已签发 token 失效。
-     * <p>[第二步] 实现：token 版本号（user.token_version 递增）或黑名单，使旧 token 立即失效。</p>
+     * <p>[第二步 已实现] 单会话方案：清空 user.current_token_hash（登录时写入的当前 token 哈希），
+     * 拦截器按「token 哈希 == current_token_hash」校验 → 旧 token 立即 401。</p>
      */
     public void invalidate(String userId) {
-        // TODO [第二步] 接入失效机制（token 版本号 / 黑名单），使该用户所有旧 token 立即失效
+        userMapper.updateCurrentTokenHash(userId, null);
     }
 }

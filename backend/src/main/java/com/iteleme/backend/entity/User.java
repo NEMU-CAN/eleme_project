@@ -23,4 +23,8 @@ public class User {
     private String avatar;
     /** 删除标记。 */
     private Integer delFlag;
+    // ===== [第二步 新增] 当前有效 token 的哈希（登录写入，注销/删除清空） =====
+    /** 当前有效 token 的哈希（NULL 表示当前无有效 token）。 */
+    private String currentTokenHash;
+    // ===== [第二步 新增结束] =====
 }

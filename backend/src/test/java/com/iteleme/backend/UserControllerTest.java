@@ -1,6 +1,7 @@
 package com.iteleme.backend;
 
 import com.iteleme.backend.config.JwtUtil;
+import com.iteleme.backend.mapper.UserMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -25,11 +27,16 @@ class UserControllerTest {
     // ===== [阶段② 新增] 生成鉴权 token =====
     @Autowired
     private JwtUtil jwtUtil;
+    // ===== [第二步 新增] 单会话：测试 token 需写入 current_token_hash，否则拦截器按哈希校验拒绝 =====
+    @Autowired
+    private UserMapper userMapper;
 
     private String auth() {
-        return "Bearer " + jwtUtil.generateToken("11111111111");
+        String token = jwtUtil.generateToken("11111111111");
+        userMapper.updateCurrentTokenHash("11111111111", jwtUtil.hashToken(token));
+        return "Bearer " + token;
     }
-    // ===== [阶段② 新增结束] =====
+    // ===== [第二步 新增结束] =====
 
     @Test
     @DisplayName("查询用户 - 返回 Result 包装的 UserVO")
@@ -134,6 +141,45 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("未登录或登录已过期"));
     }
     // ===== [第一步 新增结束] =====
+
+    // ===== [第二步 新增] token 失效机制（单会话：current_token_hash） =====
+    @Test
+    @DisplayName("退出登录 - 注销后旧 token 访问返回401")
+    void logoutInvalidatesToken() throws Exception {
+        String token = auth();
+        mockMvc.perform(delete("/api/users/11111111111/sessions").header("Authorization", token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/users/11111111111").header("Authorization", token))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40101))
+                .andExpect(jsonPath("$.msg").value("未登录或登录已过期"));
+    }
+
+    @Test
+    @DisplayName("单会话 - 重新登录后旧 token 失效，新 token 可用")
+    void newLoginInvalidatesOldToken() throws Exception {
+        String loginJson = "{\"userId\":\"11111111111\",\"password\":\"123\"}";
+        String first = mockMvc.perform(post("/api/sessions")
+                        .contentType(MediaType.APPLICATION_JSON).content(loginJson))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String token1 = new ObjectMapper().readTree(first).path("data").path("token").asText();
+
+        String second = mockMvc.perform(post("/api/sessions")
+                        .contentType(MediaType.APPLICATION_JSON).content(loginJson))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String token2 = new ObjectMapper().readTree(second).path("data").path("token").asText();
+
+        mockMvc.perform(get("/api/users/11111111111").header("Authorization", "Bearer " + token1))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40101));
+        mockMvc.perform(get("/api/users/11111111111").header("Authorization", "Bearer " + token2))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value("11111111111"));
+    }
+    // ===== [第二步 新增结束] =====
 
     // ===== [第一步 新增] 删除账户（软删） =====
     @Test

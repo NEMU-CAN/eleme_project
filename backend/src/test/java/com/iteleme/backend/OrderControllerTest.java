@@ -1,6 +1,7 @@
 package com.iteleme.backend;
 
 import com.iteleme.backend.config.JwtUtil;
+import com.iteleme.backend.mapper.UserMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,11 +31,16 @@ class OrderControllerTest {
     // ===== [阶段② 新增] 生成鉴权 token =====
     @Autowired
     private JwtUtil jwtUtil;
+    // ===== [第二步 新增] 单会话：测试 token 需写入 current_token_hash，否则拦截器按哈希校验拒绝 =====
+    @Autowired
+    private UserMapper userMapper;
 
     private String auth(String userId) {
-        return "Bearer " + jwtUtil.generateToken(userId);
+        String token = jwtUtil.generateToken(userId);
+        userMapper.updateCurrentTokenHash(userId, jwtUtil.hashToken(token));
+        return "Bearer " + token;
     }
-    // ===== [阶段② 新增结束] =====
+    // ===== [第二步 新增结束] =====
 
     @Test
     @DisplayName("创建、查询订单 - 兼容原始 elm 数据库字段")

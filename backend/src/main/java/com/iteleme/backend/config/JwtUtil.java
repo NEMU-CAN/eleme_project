@@ -15,6 +15,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
+import java.util.UUID;
 
 @Component
 public class JwtUtil {
@@ -39,6 +40,9 @@ public class JwtUtil {
             payload.put("sub", userId);
             payload.put("iat", now / 1000L);
             payload.put("exp", (now + expireMillis) / 1000L);
+            // ===== [第二步 新增] jti：每次登录生成唯一 token（同秒内多次登录也互不相同，单会话哈希校验才可靠） =====
+            payload.put("jti", UUID.randomUUID().toString());
+            // ===== [第二步 新增结束] =====
             String body = base64Url(HEADER_JSON) + "." + base64Url(MAPPER.writeValueAsString(payload));
             return body + "." + base64Url(sign(body));
         } catch (Exception e) {
@@ -73,6 +77,18 @@ public class JwtUtil {
             return null;
         }
     }
+
+    // ===== [第二步 新增] token 哈希：单会话校验用（登录写入 user.current_token_hash，注销/删除清空） =====
+    /** 计算 token 的哈希（SHA-256 → base64url）。 */
+    public String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return base64Url(digest.digest(token.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new IllegalStateException("计算 token 哈希失败", e);
+        }
+    }
+    // ===== [第二步 新增结束] =====
 
     private byte[] sign(String body) throws Exception {
         Mac mac = Mac.getInstance("HmacSHA256");
