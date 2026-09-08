@@ -1,95 +1,108 @@
 package com.iteleme.backend.service.impl;
 
+import com.iteleme.backend.common.FieldErrorVO;
+import com.iteleme.backend.config.JwtUtil;
+import com.iteleme.backend.constant.UserRole;
+import com.iteleme.backend.context.CurrentUserContext;
+import com.iteleme.backend.dto.LoginRequest;
+import com.iteleme.backend.dto.UserCreateRequest;
+import com.iteleme.backend.dto.UserUpdateRequest;
 import com.iteleme.backend.entity.User;
-import com.iteleme.backend.exception.ApiException;
+import com.iteleme.backend.exception.ConflictException;
+import com.iteleme.backend.exception.ForbiddenException;
+import com.iteleme.backend.exception.NotFoundException;
+import com.iteleme.backend.exception.UnauthorizedException;
 import com.iteleme.backend.mapper.UserMapper;
+import com.iteleme.backend.service.TokenBlacklistService;
 import com.iteleme.backend.service.UserService;
 import com.iteleme.backend.vo.UserVO;
-import com.iteleme.backend.vo.request.LoginRequest;
-import com.iteleme.backend.vo.request.UserCreateRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.Objects;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
-/**
- * 用户业务实现。
- */
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    /** 用户表数据访问对象。 */
-    @Autowired
-    private UserMapper userMapper;
+    private final UserMapper userMapper;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    /**
-     * 查询用户信息。
-     */
     @Override
-    public UserVO getUserById(String userId) {
-        ServiceValidator.requireUserId(userId);
-        User user = userMapper.findActiveById(userId);
-        if (user == null) {
-            throw ApiException.notFound();
+    @Transactional
+    public UserVO register(UserCreateRequest request) {
+        if (userMapper.findByPhone(request.phone()) != null) {
+            throw new ConflictException("手机号已存在", java.util.List.of(new FieldErrorVO("phone", "手机号已存在")));
         }
-        return VoConverters.toUserVO(user);
-    }
-
-    /**
-     * 注册用户。
-     */
-    @Override
-    public UserVO createUser(UserCreateRequest request) {
-        validateCreateRequest(request);
-        if (userMapper.findById(request.getUserId()) != null) {
-            throw ApiException.conflict("userId", "用户编号已存在");
-        }
-
-        User user = new User();
-        user.setId(request.getUserId());
-        user.setPassword(request.getPassword());
-        user.setName(request.getUserName());
-        user.setSex(request.getUserSex());
-        user.setAvatar(request.getUserImg());
-        user.setDelFlag(1);
+        User user = new User(
+                userMapper.nextId(),
+                request.nickname(),
+                request.password(),
+                request.phone(),
+                request.avatar(),
+                request.gender(),
+                UserRole.CUSTOMER,
+                0
+        );
         userMapper.insert(user);
-        return VoConverters.toUserVO(user);
+        return UserVO.from(user);
     }
 
-    /**
-     * 用户登录。
-     */
     @Override
-    public UserVO login(LoginRequest request) {
-        if (request == null) {
-            throw ApiException.badRequest("body", "请求体不能为空");
+    public UserVO login(String phone, String password) {
+        User user = userMapper.findByPhone(phone);
+        if (user == null || !password.equals(user.getPassword())) {
+            throw new UnauthorizedException("手机号或密码错误");
         }
-        ServiceValidator.requireUserId(request.getUserId());
-        ServiceValidator.requireNonBlank(request.getPassword(), "password");
-        ServiceValidator.requireMaxLength(request.getPassword(), "password", 20);
-
-        User user = userMapper.findById(request.getUserId());
-        if (user == null || !Objects.equals(user.getDelFlag(), 1)) {
-            throw ApiException.notFound();
+        if (user.getStatus() != 0) {
+            throw new ForbiddenException("账号已禁用");
         }
-        if (!Objects.equals(user.getPassword(), request.getPassword())) {
-            throw ApiException.unauthorized();
-        }
-        return VoConverters.toUserVO(user);
+        return UserVO.from(user).withToken(JwtUtil.create(user.getId(), user.getRole()));
     }
 
-    /**
-     * 校验注册请求体。
-     */
-    private void validateCreateRequest(UserCreateRequest request) {
-        if (request == null) {
-            throw ApiException.badRequest("body", "请求体不能为空");
+    @Override
+    public UserVO current() {
+        User user = loadCurrentUser();
+        return UserVO.from(user);
+    }
+
+    @Override
+    @Transactional
+    public UserVO update(UserUpdateRequest request) {
+        User user = loadCurrentUser();
+        if (request.phone() != null && !request.phone().equals(user.getPhone())) {
+            User exist = userMapper.findByPhone(request.phone());
+            if (exist != null && !exist.getId().equals(user.getId())) {
+                throw new ConflictException("手机号已存在", java.util.List.of(new FieldErrorVO("phone", "手机号已存在")));
+            }
+            user.setPhone(request.phone());
         }
-        ServiceValidator.requireUserId(request.getUserId());
-        ServiceValidator.requireNonBlank(request.getPassword(), "password");
-        ServiceValidator.requireMaxLength(request.getPassword(), "password", 20);
-        ServiceValidator.requireNonBlank(request.getUserName(), "userName");
-        ServiceValidator.requireMaxLength(request.getUserName(), "userName", 20);
-        ServiceValidator.requireZeroOrOne(request.getUserSex(), "userSex");
+        if (request.nickname() != null) {
+            user.setNickname(request.nickname());
+        }
+        if (request.avatar() != null) {
+            user.setAvatar(request.avatar());
+        }
+        if (request.gender() != null) {
+            user.setGender(request.gender());
+        }
+        userMapper.update(user);
+        return UserVO.from(user);
+    }
+
+    @Override
+    public void logout() {
+        String token = CurrentUserContext.require().token();
+        tokenBlacklistService.revoke(token);
+    }
+
+    private User loadCurrentUser() {
+        Integer userId = CurrentUserContext.userId();
+        User user = userMapper.findById(userId);
+        if (user == null) {
+            throw new NotFoundException("用户不存在");
+        }
+        if (user.getStatus() != 0) {
+            throw new ForbiddenException("账号已禁用");
+        }
+        return user;
     }
 }

@@ -1,19 +1,19 @@
 package com.iteleme.backend.service;
 
+import com.iteleme.backend.dto.CartItemSaveRequest;
+import com.iteleme.backend.dto.CartItemUpdateRequest;
 import com.iteleme.backend.vo.CartItemVO;
-import com.iteleme.backend.vo.request.CartCreateRequest;
-import com.iteleme.backend.vo.request.CartUpdateRequest;
 
 import java.util.List;
 
 public interface CartService {
-    List<CartItemVO> listCartItems(String userId, Integer businessId);
+    List<CartItemVO> list(Integer businessId);
 
-    CartItemVO upsertCartItem(String userId, CartCreateRequest request);
+    CartItemVO add(CartItemSaveRequest request);
 
-    CartItemVO updateCartItemQuantity(String userId, Integer cartId, CartUpdateRequest request);
+    CartItemVO update(Integer foodId, CartItemUpdateRequest request);
 
-    void deleteCartItemsByFilter(String userId, Integer businessId, Integer foodId);
+    void remove(Integer foodId);
 
-    void deleteCartItem(String userId, Integer cartId);
+    void clear(Integer businessId);
 }

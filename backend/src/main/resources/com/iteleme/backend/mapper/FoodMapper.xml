@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iteleme.backend.mapper.FoodMapper">
+
+    <select id="list" resultType="com.iteleme.backend.entity.Food">
+        select * from `food`
+        <where>
+            <if test="businessId != null">
+                and `business_id` = #{businessId}
+            </if>
+            <if test="status != null">
+                and `status` = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                and (
+                    `name` like concat('%', #{keyword}, '%')
+                    or `description` like concat('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        order by `id` desc
+    </select>
+
+    <select id="findById" resultType="com.iteleme.backend.entity.Food">
+        select * from `food` where `id` = #{id} limit 1
+    </select>
+
+    <select id="nextId" resultType="java.lang.Integer">
+        select coalesce(max(`id`), 0) + 1 from `food`
+    </select>
+
+    <insert id="insert" parameterType="com.iteleme.backend.entity.Food">
+        insert into `food` (`id`, `name`, `description`, `image`, `price`, `business_id`, `stock`, `status`)
+        values (#{id}, #{name}, #{description}, #{image}, #{price}, #{businessId}, #{stock}, #{status})
+    </insert>
+
+    <update id="update" parameterType="com.iteleme.backend.entity.Food">
+        update `food`
+        set `name` = #{name},
+            `description` = #{description},
+            `image` = #{image},
+            `price` = #{price},
+            `business_id` = #{businessId},
+            `stock` = #{stock},
+            `status` = #{status}
+        where `id` = #{id}
+    </update>
+
+    <update id="updateStatus">
+        update `food`
+        set `status` = #{status}
+        where `id` = #{id}
+    </update>
+
+    <update id="deduct">
+        update `food`
+        set `stock` = `stock` - #{quantity}
+        where `id` = #{id}
+          and `stock` &gt;= #{quantity}
+    </update>
+</mapper>

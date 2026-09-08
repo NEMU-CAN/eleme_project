@@ -1,24 +1,22 @@
 package com.iteleme.backend.vo;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.iteleme.backend.entity.User;
 
-/**
- * 用户展示对象。
- */
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class UserVO {
-    /** 用户编号。 */
-    private String id;
-    /** 用户名称。 */
-    private String name;
-    /** 用户性别。 */
-    private Integer sex;
-    /** 用户头像。 */
-    private String avatar;
-    /** 删除标记。 */
-    private Integer delFlag;
+public record UserVO(
+        Integer id,
+        String nickname,
+        String phone,
+        String avatar,
+        Integer gender,
+        Integer role,
+        Integer status,
+        String token
+) {
+    public static UserVO from(User user) {
+        return new UserVO(user.getId(), user.getNickname(), user.getPhone(), user.getAvatar(), user.getGender(), user.getRole(), user.getStatus(), null);
+    }
+
+    public UserVO withToken(String token) {
+        return new UserVO(id, nickname, phone, avatar, gender, role, status, token);
+    }
 }

@@ -1,37 +1,24 @@
 package com.iteleme.backend.mapper;
 
 import com.iteleme.backend.entity.Food;
-import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
-@Mapper
 public interface FoodMapper {
-    @Select("""
-            SELECT id, name, description, image, price,
-                   business_id AS businessId, remark
-            FROM food
-            WHERE business_id = #{businessId}
-            ORDER BY id
-            """)
-    List<Food> findByBusinessId(@Param("businessId") Integer businessId);
+    List<Food> list(@Param("businessId") Integer businessId,
+                    @Param("status") Integer status,
+                    @Param("keyword") String keyword);
 
-    @Select("""
-            SELECT id, name, description, image, price,
-                   business_id AS businessId, remark
-            FROM food
-            WHERE id = #{foodId}
-            """)
-    Food findById(@Param("foodId") Integer foodId);
+    Food findById(@Param("id") Integer id);
 
-    @Select("""
-            SELECT id, name, description, image, price,
-                   business_id AS businessId, remark
-            FROM food
-            WHERE id = #{foodId} AND business_id = #{businessId}
-            """)
-    Food findByIdAndBusinessId(@Param("foodId") Integer foodId,
-                               @Param("businessId") Integer businessId);
+    int insert(Food food);
+
+    int update(Food food);
+
+    int updateStatus(@Param("id") Integer id, @Param("status") Integer status);
+
+    int deduct(@Param("id") Integer id, @Param("quantity") Integer quantity);
+
+    Integer nextId();
 }

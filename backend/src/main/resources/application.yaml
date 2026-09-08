@@ -1,3 +1,6 @@
+server:
+  servlet:
+    context-path: /api
 spring:
   application:
     name: backend
@@ -6,8 +9,12 @@ spring:
     username: root
     password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
+  jackson:
+    time-zone: Asia/Shanghai
 mybatis:
-  mapper-locations: classpath*:com.iteleme.backend.mapper/*.xml
+  mapper-locations: classpath*:com/iteleme/backend/mapper/*.xml
   configuration:
     # 开启下划线到驼峰命名的自动映射
     map-underscore-to-camel-case: true
+    # 方便本地调试 SQL，正式环境可关闭
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

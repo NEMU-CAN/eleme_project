@@ -1,14 +1,20 @@
 package com.iteleme.backend.service;
 
+import com.iteleme.backend.dto.BusinessSaveRequest;
+import com.iteleme.backend.dto.BusinessStatusRequest;
+import com.iteleme.backend.entity.Business;
 import com.iteleme.backend.vo.BusinessVO;
-import com.iteleme.backend.vo.FoodVO;
 
 import java.util.List;
 
 public interface BusinessService {
-    List<BusinessVO> listBusinesses(Integer orderTypeId);
+    List<Business> list(Integer tasteId, Integer status, String keyword);
 
-    BusinessVO getBusinessById(Integer businessId);
+    BusinessVO get(Integer id);
 
-    List<FoodVO> listFoodsByBusinessId(Integer businessId);
+    BusinessVO create(BusinessSaveRequest request);
+
+    BusinessVO update(Integer id, BusinessSaveRequest request);
+
+    void status(Integer id, BusinessStatusRequest request);
 }

@@ -1,201 +1,270 @@
 package com.iteleme.backend.service.impl;
 
+import com.iteleme.backend.common.FieldErrorVO;
+import com.iteleme.backend.common.PageResult;
+import com.iteleme.backend.constant.BusinessStatus;
+import com.iteleme.backend.constant.FoodStatus;
+import com.iteleme.backend.constant.OrderStatus;
+import com.iteleme.backend.constant.UserRole;
+import com.iteleme.backend.context.CurrentUserContext;
+import com.iteleme.backend.dto.OrderCreateRequest;
+import com.iteleme.backend.dto.OrderStatusRequest;
 import com.iteleme.backend.entity.Business;
 import com.iteleme.backend.entity.Cart;
 import com.iteleme.backend.entity.DeliveryAddress;
 import com.iteleme.backend.entity.Food;
-import com.iteleme.backend.entity.Order;
 import com.iteleme.backend.entity.OrderDetail;
-import com.iteleme.backend.exception.ApiException;
+import com.iteleme.backend.entity.Orders;
+import com.iteleme.backend.exception.BadRequestException;
+import com.iteleme.backend.exception.ConflictException;
+import com.iteleme.backend.exception.ForbiddenException;
+import com.iteleme.backend.exception.NotFoundException;
+import com.iteleme.backend.mapper.AddressMapper;
 import com.iteleme.backend.mapper.BusinessMapper;
 import com.iteleme.backend.mapper.CartMapper;
-import com.iteleme.backend.mapper.DeliveryAddressMapper;
 import com.iteleme.backend.mapper.FoodMapper;
-import com.iteleme.backend.mapper.OrderDetailMapper;
 import com.iteleme.backend.mapper.OrderMapper;
-import com.iteleme.backend.mapper.UserMapper;
+import com.iteleme.backend.service.AccessService;
 import com.iteleme.backend.service.OrderService;
-import com.iteleme.backend.vo.OrderItemVO;
-import com.iteleme.backend.vo.OrderVO;
-import com.iteleme.backend.vo.request.OrderCreateRequest;
+import com.iteleme.backend.vo.DeliveryAddressVO;
+import com.iteleme.backend.vo.OrderDetailVO;
+import com.iteleme.backend.vo.OrderSummaryVO;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
-/**
- * 订单业务实现。
- */
+@RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
-    /** 订单日期格式。 */
-    private static final DateTimeFormatter ORDER_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final OrderMapper orderMapper;
+    private final CartMapper cartMapper;
+    private final FoodMapper foodMapper;
+    private final AddressMapper addressMapper;
+    private final BusinessMapper businessMapper;
+    private final AccessService accessService;
 
-    /** 订单表数据访问对象。 */
-    @Autowired
-    private OrderMapper orderMapper;
-    /** 订单明细表数据访问对象。 */
-    @Autowired
-    private OrderDetailMapper orderDetailMapper;
-    /** 购物车表数据访问对象。 */
-    @Autowired
-    private CartMapper cartMapper;
-    /** 用户表数据访问对象。 */
-    @Autowired
-    private UserMapper userMapper;
-    /** 商家表数据访问对象。 */
-    @Autowired
-    private BusinessMapper businessMapper;
-    /** 食品表数据访问对象。 */
-    @Autowired
-    private FoodMapper foodMapper;
-    /** 送货地址表数据访问对象。 */
-    @Autowired
-    private DeliveryAddressMapper deliveryAddressMapper;
-
-    /**
-     * 查询用户订单列表。
-     */
-    @Override
-    public List<OrderVO> listOrdersByUserId(String userId, Integer businessId, Integer orderState) {
-        ensureActiveUser(userId);
-        ServiceValidator.requireOptionalPositive(businessId, "businessId");
-        ServiceValidator.requireOptionalZeroOrOne(orderState, "orderState");
-        return orderMapper.findByUserId(userId, businessId, orderState).stream()
-                .map(this::assembleOrder)
-                .toList();
-    }
-
-    /**
-     * 创建订单。
-     */
     @Override
     @Transactional
-    public OrderVO createOrder(String userId, OrderCreateRequest request) {
-        ensureActiveUser(userId);
-        validateCreateRequest(request);
-
-        Business business = businessMapper.findById(request.getBusinessId());
-        DeliveryAddress deliveryAddress = deliveryAddressMapper.findByIdForUser(userId, request.getDaId());
-        if (business == null || deliveryAddress == null) {
-            throw ApiException.notFound();
+    public OrderDetailVO create(OrderCreateRequest request) {
+        ensureCustomer();
+        Integer userId = CurrentUserContext.userId();
+        List<Cart> carts = cartMapper.list(userId, request.businessId());
+        if (carts.isEmpty()) {
+            throw new ConflictException("购物车为空", List.of(new FieldErrorVO("cart", "购物车为空")));
         }
 
-        List<Cart> cartItems = cartMapper.findByUserId(userId, request.getBusinessId());
-        if (cartItems.isEmpty()) {
-            throw ApiException.conflict("cart", "购物车为空，无法创建订单");
+        Business business = loadBusiness(request.businessId());
+        if (business.getStatus() != BusinessStatus.OPEN) {
+            throw new ConflictException("商家未营业", List.of(new FieldErrorVO("businessId", "商家未营业")));
         }
+        DeliveryAddress address = loadAddress(request.deliveryAddressId());
+        List<OrderDetail> details = new ArrayList<>();
+        BigDecimal totalAmount = BigDecimal.ZERO;
 
-        BigDecimal orderTotal = BigDecimal.ZERO;
-        for (Cart cartItem : cartItems) {
-            Food food = foodMapper.findByIdAndBusinessId(cartItem.getFoodId(), request.getBusinessId());
-            if (food == null) {
-                throw ApiException.notFound();
+        for (Cart cart : carts) {
+            Food food = loadFood(cart.getFoodId());
+            if (!food.getBusinessId().equals(request.businessId())) {
+                throw new BadRequestException("购物车数据异常");
             }
-            orderTotal = orderTotal.add(food.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+            if (food.getStatus() != FoodStatus.ONLINE) {
+                throw new ConflictException("商品已下架", List.of(new FieldErrorVO("foodId", "商品已下架")));
+            }
+            if (food.getStock() < cart.getQuantity()) {
+                throw new ConflictException("库存不足", List.of(new FieldErrorVO("stock", "库存不足")));
+            }
+            BigDecimal subtotal = food.getPrice().multiply(BigDecimal.valueOf(cart.getQuantity()));
+            totalAmount = totalAmount.add(subtotal);
+            details.add(buildDetail(food, cart.getQuantity(), subtotal));
         }
 
-        Order order = new Order();
-        order.setUserId(userId);
-        order.setBusinessId(request.getBusinessId());
-        order.setOrderDate(LocalDateTime.now().format(ORDER_DATE_FORMATTER));
-        order.setOrderTotal(orderTotal);
-        order.setAddressId(request.getDaId());
-        order.setOrderStatus(0);
+        Orders order = new Orders(
+                orderMapper.nextId(),
+                buildOrderNo(),
+                userId,
+                business.getId(),
+                LocalDateTime.now(),
+                business.getDeliveryPrice(),
+                totalAmount,
+                totalAmount.add(business.getDeliveryPrice()),
+                address.getId(),
+                OrderStatus.UNPAID
+        );
         orderMapper.insert(order);
 
-        for (Cart cartItem : cartItems) {
-            OrderDetail orderDetail = new OrderDetail();
-            orderDetail.setOrderId(order.getId());
-            orderDetail.setFoodId(cartItem.getFoodId());
-            orderDetail.setQuantity(cartItem.getQuantity());
-            orderDetailMapper.insert(orderDetail);
+        for (OrderDetail detail : details) {
+            detail.setOrderId(order.getId());
+            detail.setId(orderMapper.nextDetailId());
+            orderMapper.insertDetail(detail);
+            int affected = foodMapper.deduct(detail.getFoodId(), detail.getQuantity());
+            if (affected == 0) {
+                throw new ConflictException("库存不足", List.of(new FieldErrorVO("stock", "库存不足")));
+            }
         }
-        cartMapper.deleteByFilter(userId, request.getBusinessId(), null);
 
-        Order created = orderMapper.findByIdForUser(userId, order.getId());
-        return assembleOrder(created);
+        cartMapper.clearByUserAndBusiness(userId, request.businessId());
+        return get(order.getId());
     }
 
-    /**
-     * 查询订单详情。
-     */
     @Override
-    public OrderVO getOrderById(String userId, Integer orderId) {
-        ensureActiveUser(userId);
-        ServiceValidator.requirePositive(orderId, "orderId");
-        Order order = orderMapper.findByIdForUser(userId, orderId);
-        if (order == null) {
-            throw ApiException.notFound();
+    public PageResult<OrderSummaryVO> list(Integer businessId, Integer orderStatus, int page, int pageSize) {
+        validateOrderStatus(orderStatus);
+        if (page < 1) {
+            page = 1;
         }
-        return assembleOrder(order);
+        if (pageSize < 1) {
+            pageSize = 10;
+        }
+        Integer userId = CurrentUserContext.userId();
+        List<Integer> ownedBusinessIds = null;
+        if (CurrentUserContext.role() == UserRole.BUSINESS) {
+            ownedBusinessIds = accessService.ownedBusinessIds(userId);
+            if (businessId != null && !ownedBusinessIds.contains(businessId)) {
+                throw new ForbiddenException("无权查看该商家的订单");
+            }
+            if (ownedBusinessIds.isEmpty() && businessId == null) {
+                return PageResult.of(0, page, pageSize, List.of());
+            }
+        }
+        long total = orderMapper.count(
+                userId,
+                CurrentUserContext.role(),
+                ownedBusinessIds,
+                businessId,
+                orderStatus
+        );
+        List<Orders> orders = orderMapper.list(
+                userId,
+                CurrentUserContext.role(),
+                ownedBusinessIds,
+                businessId,
+                orderStatus,
+                (page - 1) * pageSize,
+                pageSize
+        );
+        List<OrderSummaryVO> records = new ArrayList<>(orders.size());
+        for (Orders order : orders) {
+            records.add(toSummary(order));
+        }
+        return PageResult.of(total, page, pageSize, records);
     }
 
-    /**
-     * 支付订单；当前项目直接模拟支付成功。
-     */
+    @Override
+    public OrderDetailVO get(Integer id) {
+        Orders order = loadOrder(id);
+        ensureReadable(order);
+        DeliveryAddress address = addressMapper.findByIdAny(order.getDeliveryAddressId());
+        return new OrderDetailVO(order, address, orderMapper.details(order.getId()));
+    }
+
     @Override
     @Transactional
-    public OrderVO payOrder(String userId, Integer orderId) {
-        ensureActiveUser(userId);
-        ServiceValidator.requirePositive(orderId, "orderId");
+    public void status(Integer id, OrderStatusRequest request) {
+        Orders order = loadOrder(id);
+        ensureReadable(order);
+        if (request.orderStatus() != OrderStatus.CANCELED
+                && request.orderStatus() != OrderStatus.UNPAID
+                && request.orderStatus() != OrderStatus.PAID
+                && request.orderStatus() != OrderStatus.COMPLETED) {
+            throw new BadRequestException("非法订单状态");
+        }
+        orderMapper.updateStatus(id, request.orderStatus());
+    }
 
-        Order order = orderMapper.findByIdForUser(userId, orderId);
+    private void ensureCustomer() {
+        if (CurrentUserContext.role() != UserRole.CUSTOMER) {
+            throw new ForbiddenException("无权限操作");
+        }
+    }
+
+    private Orders loadOrder(Integer id) {
+        Orders order = orderMapper.findById(id);
         if (order == null) {
-            throw ApiException.notFound();
+            throw new NotFoundException("订单不存在");
         }
-        if (Integer.valueOf(1).equals(order.getOrderStatus())) {
-            throw ApiException.conflict("orderId", "订单已支付，不能重复支付");
-        }
-        if (!Integer.valueOf(0).equals(order.getOrderStatus())) {
-            throw ApiException.conflict("orderId", "订单状态不允许支付");
-        }
-
-        int affectedRows = orderMapper.markAsPaid(userId, orderId);
-        if (affectedRows == 0) {
-            throw ApiException.conflict("orderId", "订单状态已发生变化，请重试");
-        }
-
-        return assembleOrder(orderMapper.findByIdForUser(userId, orderId));
+        return order;
     }
 
-    /**
-     * 校验创建订单的请求体。
-     */
-    private void validateCreateRequest(OrderCreateRequest request) {
-        if (request == null) {
-            throw ApiException.badRequest("body", "请求体不能为空");
+    private void ensureReadable(Orders order) {
+        Integer role = CurrentUserContext.role();
+        if (role == UserRole.ADMIN) {
+            return;
         }
-        ServiceValidator.requirePositive(request.getBusinessId(), "businessId");
-        ServiceValidator.requirePositive(request.getDaId(), "daId");
+        if (role == UserRole.CUSTOMER && !order.getUserId().equals(CurrentUserContext.userId())) {
+            throw new ForbiddenException("无权查看订单");
+        }
+        if (role == UserRole.BUSINESS) {
+            List<Integer> ownedBusinessIds = accessService.ownedBusinessIds(CurrentUserContext.userId());
+            if (!ownedBusinessIds.contains(order.getBusinessId())) {
+                throw new ForbiddenException("无权查看订单");
+            }
+        }
     }
 
-    /**
-     * 组装订单展示对象。
-     */
-    private OrderVO assembleOrder(Order order) {
+    private Business loadBusiness(Integer businessId) {
+        Business business = businessMapper.findById(businessId);
+        if (business == null || business.getStatus() == BusinessStatus.DELETED) {
+            throw new NotFoundException("商家不存在");
+        }
+        return business;
+    }
+
+    private DeliveryAddress loadAddress(Integer addressId) {
+        DeliveryAddress address = addressMapper.findByIdAny(addressId);
+        if (address == null) {
+            throw new NotFoundException("收货地址不存在");
+        }
+        if (!address.getUserId().equals(CurrentUserContext.userId())) {
+            throw new ForbiddenException("无权使用该地址");
+        }
+        return address;
+    }
+
+    private Food loadFood(Integer foodId) {
+        Food food = foodMapper.findById(foodId);
+        if (food == null) {
+            throw new NotFoundException("商品不存在");
+        }
+        return food;
+    }
+
+    private OrderDetail buildDetail(Food food, Integer quantity, BigDecimal subtotal) {
+        return new OrderDetail(
+                null,
+                null,
+                food.getId(),
+                quantity,
+                food.getName(),
+                food.getPrice(),
+                subtotal
+        );
+    }
+
+    private OrderSummaryVO toSummary(Orders order) {
         Business business = businessMapper.findById(order.getBusinessId());
-        DeliveryAddress deliveryAddress = deliveryAddressMapper.findByIdForUser(order.getUserId(), order.getAddressId());
-        OrderVO vo = VoConverters.toOrderVO(order, business, deliveryAddress);
-        List<OrderItemVO> items = orderDetailMapper.findByOrderId(order.getId()).stream()
-                .map(orderDetail -> VoConverters.toOrderItemVO(orderDetail, foodMapper.findById(orderDetail.getFoodId())))
-                .toList();
-        vo.setItems(items);
-        return vo;
+        DeliveryAddress address = addressMapper.findByIdAny(order.getDeliveryAddressId());
+        List<OrderDetail> details = orderMapper.details(order.getId());
+        DeliveryAddressVO addressVO = address == null ? null : DeliveryAddressVO.from(address);
+        return new OrderSummaryVO(order, business, addressVO, details == null ? 0 : details.size());
     }
 
-    /**
-     * 确认用户存在且处于正常状态。
-     */
-    private void ensureActiveUser(String userId) {
-        ServiceValidator.requireUserId(userId);
-        if (userMapper.findActiveById(userId) == null) {
-            throw ApiException.notFound();
+    private void validateOrderStatus(Integer orderStatus) {
+        if (orderStatus == null) {
+            return;
         }
+        if (orderStatus != OrderStatus.CANCELED
+                && orderStatus != OrderStatus.UNPAID
+                && orderStatus != OrderStatus.PAID
+                && orderStatus != OrderStatus.COMPLETED) {
+            throw new BadRequestException("非法订单状态");
+        }
+    }
+
+    private String buildOrderNo() {
+        return "O" + System.currentTimeMillis() + CurrentUserContext.userId();
     }
 }

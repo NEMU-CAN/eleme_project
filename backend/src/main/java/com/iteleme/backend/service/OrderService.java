@@ -1,23 +1,17 @@
 package com.iteleme.backend.service;
 
-import com.iteleme.backend.vo.OrderVO;
-import com.iteleme.backend.vo.request.OrderCreateRequest;
-
-import java.util.List;
+import com.iteleme.backend.common.PageResult;
+import com.iteleme.backend.dto.OrderCreateRequest;
+import com.iteleme.backend.dto.OrderStatusRequest;
+import com.iteleme.backend.vo.OrderDetailVO;
+import com.iteleme.backend.vo.OrderSummaryVO;
 
 public interface OrderService {
-    List<OrderVO> listOrdersByUserId(String userId, Integer businessId, Integer orderState);
+    OrderDetailVO create(OrderCreateRequest request);
 
-    OrderVO createOrder(String userId, OrderCreateRequest request);
+    PageResult<OrderSummaryVO> list(Integer businessId, Integer orderStatus, int page, int pageSize);
 
-    OrderVO getOrderById(String userId, Integer orderId);
+    OrderDetailVO get(Integer id);
 
-    /**
-     * 支付订单。
-     *
-     * @param userId 用户编号
-     * @param orderId 订单编号
-     * @return 支付成功后的订单信息
-     */
-    OrderVO payOrder(String userId, Integer orderId);
+    void status(Integer id, OrderStatusRequest request);
 }

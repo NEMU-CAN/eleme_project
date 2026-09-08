@@ -1,70 +1,61 @@
 package com.iteleme.backend.controller;
 
-import com.iteleme.backend.entity.Result;
+import com.iteleme.backend.common.PageResult;
+import com.iteleme.backend.common.Result;
+import com.iteleme.backend.dto.OrderCreateRequest;
+import com.iteleme.backend.dto.OrderStatusRequest;
 import com.iteleme.backend.service.OrderService;
-import com.iteleme.backend.vo.request.OrderCreateRequest;
+import com.iteleme.backend.support.RequestValues;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
-/**
- * 订单接口。
- */
 @RestController
-@RequestMapping("/api/users/{userId}/orders")
+@Validated
+@RequiredArgsConstructor
+@RequestMapping("/orders")
 public class OrderController {
-    /** 订单业务服务。 */
-    @Autowired
-    private OrderService orderService;
+    private final OrderService orderService;
 
-    /**
-     * 查询用户订单列表。
-     */
-    @GetMapping
-    public Result listOrdersByUserId(@PathVariable("userId") String userId,
-                                     @RequestParam(value = "businessId", required = false) Integer businessId,
-                                     @RequestParam(value = "orderState", required = false) Integer orderState) {
-        return Result.success(orderService.listOrdersByUserId(userId, businessId, orderState));
-    }
-
-    /**
-     * 创建订单。
-     */
     @PostMapping
-    public ResponseEntity<Result> createOrder(@PathVariable("userId") String userId,
-                                              @RequestBody OrderCreateRequest request) {
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(Result.success(orderService.createOrder(userId, request)));
+    public ResponseEntity<Result> create(@RequestBody @Valid OrderCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(Result.success(orderService.create(request)));
     }
 
-    /**
-     * 查询订单详情。
-     */
-    @GetMapping("/{orderId}")
-    public Result getOrderById(@PathVariable("userId") String userId,
-                               @PathVariable("orderId") Integer orderId) {
-        return Result.success(orderService.getOrderById(userId, orderId));
+    @GetMapping
+    public Result list(@RequestParam(required = false) Integer businessId,
+                       @RequestParam(name = "business_id", required = false) Integer businessIdSnake,
+                       @RequestParam(required = false) Integer orderStatus,
+                       @RequestParam(name = "order_status", required = false) Integer orderStatusSnake,
+                       @RequestParam(name = "orderState", required = false) Integer orderState,
+                       @RequestParam(required = false, defaultValue = "1") Integer page,
+                       @RequestParam(name = "page_size", required = false, defaultValue = "10") Integer pageSize,
+                       @RequestParam(required = false) Integer pageSizeCamel) {
+        Integer resolvedBusinessId = RequestValues.first(businessId, businessIdSnake);
+        Integer resolvedOrderStatus = RequestValues.first(RequestValues.first(orderStatus, orderStatusSnake), orderState);
+        Integer resolvedPageSize = RequestValues.first(pageSizeCamel, pageSize);
+        PageResult<?> result = orderService.list(resolvedBusinessId, resolvedOrderStatus, page, resolvedPageSize);
+        return Result.success(result);
     }
 
-    /**
-     * 支付订单。
-     *
-     * <p>当前项目不接入真实支付渠道，用户发起请求后直接将订单标记为已支付。</p>
-     */
-    @PostMapping("/{orderId}/payments")
-    public Result payOrder(@PathVariable("userId") String userId,
-                           @PathVariable("orderId") Integer orderId) {
-        return Result.success(orderService.payOrder(userId, orderId));
+    @GetMapping("/{id}")
+    public Result get(@PathVariable Integer id) {
+        return Result.success(orderService.get(id));
+    }
+
+    @PutMapping("/{id}/status")
+    public Result status(@PathVariable Integer id, @RequestBody @Valid OrderStatusRequest request) {
+        orderService.status(id, request);
+        return Result.success();
     }
 }
