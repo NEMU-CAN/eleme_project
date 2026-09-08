@@ -1,5 +1,6 @@
 package com.iteleme.backend;
 
+import com.iteleme.backend.config.JwtUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,11 +25,19 @@ class DeliveryAddressControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+    // ===== [阶段② 新增] 生成鉴权 token =====
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    private String auth() {
+        return "Bearer " + jwtUtil.generateToken("11111111111");
+    }
+    // ===== [阶段② 新增结束] =====
 
     @Test
     @DisplayName("查询地址列表 - 使用用户路径并返回 Result")
     void listDeliveryAddresses() throws Exception {
-        mockMvc.perform(get(ADDRESS_URL))
+        mockMvc.perform(get(ADDRESS_URL).header("Authorization", auth()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(1))
                 .andExpect(jsonPath("$.data").isArray())
@@ -38,7 +47,7 @@ class DeliveryAddressControllerTest {
     @Test
     @DisplayName("获取地址详情 - 返回规范 DeliveryAddressVO")
     void getDeliveryAddressSuccess() throws Exception {
-        mockMvc.perform(get(ADDRESS_URL + "/1"))
+        mockMvc.perform(get(ADDRESS_URL + "/1").header("Authorization", auth()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.contactName").value("张三丰"))
@@ -48,7 +57,7 @@ class DeliveryAddressControllerTest {
     @Test
     @DisplayName("获取地址详情 - 不存在时返回404")
     void getDeliveryAddressNotFound() throws Exception {
-        mockMvc.perform(get(ADDRESS_URL + "/99999"))
+        mockMvc.perform(get(ADDRESS_URL + "/99999").header("Authorization", auth()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(40401));
     }
@@ -58,6 +67,7 @@ class DeliveryAddressControllerTest {
     void createAndUpdateDeliveryAddress() throws Exception {
         String createJson = "{\"contactName\":\"李四\",\"contactSex\":1,\"contactTel\":\"13900001234\",\"address\":\"天津市南开区卫津路92号\"}";
         String response = mockMvc.perform(post(ADDRESS_URL)
+                        .header("Authorization", auth())
                         .contentType(MediaType.APPLICATION_JSON).content(createJson))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value(1))
@@ -71,6 +81,7 @@ class DeliveryAddressControllerTest {
         String updateJson = "{\"contactName\":\"李四\",\"contactSex\":1,\"contactTel\":\"13900009999\",\"address\":\"天津市南开区卫津路93号\"}";
 
         mockMvc.perform(put(ADDRESS_URL + "/" + daId)
+                        .header("Authorization", auth())
                         .contentType(MediaType.APPLICATION_JSON).content(updateJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.contactTel").value("13900009999"));
@@ -79,7 +90,7 @@ class DeliveryAddressControllerTest {
     @Test
     @DisplayName("删除收货地址 - 存在时返回200统一响应")
     void deleteDeliveryAddressSuccess() throws Exception {
-        mockMvc.perform(delete(ADDRESS_URL + "/1"))
+        mockMvc.perform(delete(ADDRESS_URL + "/1").header("Authorization", auth()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(1))
                 .andExpect(jsonPath("$.data").isEmpty());
