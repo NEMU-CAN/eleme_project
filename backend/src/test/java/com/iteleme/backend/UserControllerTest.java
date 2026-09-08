@@ -134,4 +134,49 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("未登录或登录已过期"));
     }
     // ===== [第一步 新增结束] =====
+
+    // ===== [第一步 新增] 删除账户（软删） =====
+    @Test
+    @DisplayName("删除账户 - 删除后同 token 访问返回401")
+    void deleteAccountSuccessThenTokenInvalid() throws Exception {
+        mockMvc.perform(delete("/api/users/11111111111").header("Authorization", auth()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(1));
+
+        mockMvc.perform(get("/api/users/11111111111").header("Authorization", auth()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40101));
+    }
+
+    @Test
+    @DisplayName("删除账户 - 未带 token 返回401")
+    void deleteAccountWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(delete("/api/users/11111111111"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40101));
+    }
+
+    @Test
+    @DisplayName("删除账户后重新注册 - 同 userId 恢复并可用新密码登录")
+    void reRegisterAfterDelete() throws Exception {
+        mockMvc.perform(delete("/api/users/11111111111").header("Authorization", auth()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":\"11111111111\",\"password\":\"newpass123\",\"userName\":\"重注册用户\",\"userSex\":1}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value(1))
+                .andExpect(jsonPath("$.data.id").value("11111111111"))
+                .andExpect(jsonPath("$.data.name").value("重注册用户"));
+
+        mockMvc.perform(post("/api/sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":\"11111111111\",\"password\":\"newpass123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(1))
+                .andExpect(jsonPath("$.data.token").isNotEmpty())
+                .andExpect(jsonPath("$.data.user.name").value("重注册用户"));
+    }
+    // ===== [第一步 新增结束] =====
 }
