@@ -6,6 +6,8 @@ import com.iteleme.backend.entity.User;
 import com.iteleme.backend.exception.ApiException;
 import com.iteleme.backend.mapper.UserMapper;
 import com.iteleme.backend.service.UserService;
+import com.iteleme.backend.service.support.TokenInvalidator;
+import com.iteleme.backend.service.support.UserValidator;
 import com.iteleme.backend.vo.LoginVO;
 import com.iteleme.backend.vo.UserVO;
 import com.iteleme.backend.vo.request.LoginRequest;
@@ -30,6 +32,12 @@ public class UserServiceImpl implements UserService {
     // ===== [阶段① 新增] JWT token 工具 =====
     private final JwtUtil jwtUtil;
     // ===== [阶段① 新增结束] =====
+    // ===== [第一步 新增] 协作组件：用户校验 + token 失效 =====
+    /** 用户校验器（纵深防御：确认用户存在且有效）。 */
+    private final UserValidator userValidator;
+    /** token 失效器（注销时使旧 token 失效，第二步接入机制）。 */
+    private final TokenInvalidator tokenInvalidator;
+    // ===== [第一步 新增结束] =====
 
     /**
      * 查询用户信息。
@@ -89,6 +97,17 @@ public class UserServiceImpl implements UserService {
         return new LoginVO(token, VoConverters.toUserVO(user));
         // ===== [阶段① 新增结束] =====
     }
+
+    // ===== [第一步 新增] 退出登录（注销会话） =====
+    /**
+     * 退出登录：结束当前用户的登录会话。
+     */
+    @Override
+    public void logout(String userId) {
+        userValidator.requireActive(userId);
+        tokenInvalidator.invalidate(userId);
+    }
+    // ===== [第一步 新增结束] =====
 
     /**
      * 校验注册请求体。

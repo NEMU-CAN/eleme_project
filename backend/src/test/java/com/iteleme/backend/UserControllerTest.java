@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -113,4 +114,24 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.code").value(40101))
                 .andExpect(jsonPath("$.data").isEmpty());
     }
+
+    // ===== [第一步 新增] 退出登录（注销会话）基础框架 =====
+    @Test
+    @DisplayName("退出登录 - 带 token 返回200")
+    void logoutSuccess() throws Exception {
+        mockMvc.perform(delete("/api/users/11111111111/sessions").header("Authorization", auth()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(1))
+                .andExpect(jsonPath("$.msg").value("success"));
+    }
+
+    @Test
+    @DisplayName("退出登录 - 未带 token 返回401")
+    void logoutWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(delete("/api/users/11111111111/sessions"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40101))
+                .andExpect(jsonPath("$.msg").value("未登录或登录已过期"));
+    }
+    // ===== [第一步 新增结束] =====
 }

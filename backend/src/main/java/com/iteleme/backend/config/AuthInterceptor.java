@@ -46,17 +46,11 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
         if (userId == null) {
             // [阶段②] 强制鉴权：无有效 token → 401（拦截器异常不走 @ControllerAdvice，直接写响应）
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write(MAPPER.writeValueAsString(Result.error(40101, "未登录或登录已过期")));
-            return false;
+            return reject(response);
         }
         // [阶段②] 用户状态校验：用户不存在或已删除（del_flag != 1）→ 视为未登录
         if (userMapper.findActiveById(userId) == null) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write(MAPPER.writeValueAsString(Result.error(40101, "未登录或登录已过期")));
-            return false;
+            return reject(response);
         }
         // [阶段②] token 优先：把 token 里的 userId 覆盖进路径变量 Map（该 Map 不可变，需复制后替换）
         Map<String, String> uriVars = (Map<String, String>) request.getAttribute(
@@ -68,4 +62,16 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
         return true;
     }
+
+    // ===== [重构] 拦截器统一 401 响应（原两处重复，抽出复用） =====
+    /**
+     * 直接写 401 统一响应并拦截请求。
+     */
+    private boolean reject(HttpServletResponse response) throws Exception {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(MAPPER.writeValueAsString(Result.error(40101, "未登录或登录已过期")));
+        return false;
+    }
+    // ===== [重构结束] =====
 }
