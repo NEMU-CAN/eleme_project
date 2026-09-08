@@ -55,4 +55,13 @@ public class UserController {
         return Result.success();
     }
     // ===== [第一步 新增结束] =====
+
+    // ===== [第一步 新增] 删除账户（软删） =====
+    /** 删除账户：软删（del_flag=0），该用户所有 token 立即失效。 */
+    @DeleteMapping("/users/{userId}")
+    public Result deleteAccount(@PathVariable String userId) {
+        userService.deleteAccount(userId);
+        return Result.success();
+    }
+    // ===== [第一步 新增结束] =====
 }

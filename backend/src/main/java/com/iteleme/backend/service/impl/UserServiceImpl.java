@@ -58,9 +58,22 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserVO createUser(UserCreateRequest request) {
         validateCreateRequest(request);
-        if (userMapper.findById(request.getUserId()) != null) {
+        User existing = userMapper.findById(request.getUserId());
+        if (existing != null && Objects.equals(existing.getDelFlag(), 1)) {
             throw ApiException.conflict("userId", "用户编号已存在");
         }
+        // ===== [第一步 新增] 同 userId 重新注册：已删除账号恢复（del_flag=0 → 1） =====
+        if (existing != null) {
+            existing.setPassword(request.getPassword());
+            existing.setName(request.getUserName());
+            existing.setSex(request.getUserSex());
+            existing.setAvatar(request.getUserImg());
+            if (userMapper.reactivate(existing) == 0) {
+                throw ApiException.conflict("userId", "用户状态已发生变化，请重试");
+            }
+            return VoConverters.toUserVO(existing);
+        }
+        // ===== [第一步 新增结束] =====
 
         User user = new User();
         user.setId(request.getUserId());
@@ -106,6 +119,19 @@ public class UserServiceImpl implements UserService {
     public void logout(String userId) {
         userValidator.requireActive(userId);
         tokenInvalidator.invalidate(userId);
+    }
+    // ===== [第一步 新增结束] =====
+
+    // ===== [第一步 新增] 删除账户（软删，del_flag=0） =====
+    /**
+     * 删除账户：软删（del_flag=0）。该用户所有 token 立即失效（拦截器按 del_flag 校验）。
+     */
+    @Override
+    public void deleteAccount(String userId) {
+        userValidator.requireActive(userId);
+        if (userMapper.markAsDeleted(userId) == 0) {
+            throw ApiException.conflict("userId", "用户状态已发生变化，请重试");
+        }
     }
     // ===== [第一步 新增结束] =====
 

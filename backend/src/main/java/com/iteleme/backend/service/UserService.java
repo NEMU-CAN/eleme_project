@@ -17,4 +17,8 @@ public interface UserService {
     // ===== [第一步 新增] 退出登录（注销会话） =====
     void logout(String userId);
     // ===== [第一步 新增结束] =====
+
+    // ===== [第一步 新增] 删除账户（软删，del_flag=0） =====
+    void deleteAccount(String userId);
+    // ===== [第一步 新增结束] =====
 }
