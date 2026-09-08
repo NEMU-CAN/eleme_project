@@ -1,6 +1,7 @@
 package com.iteleme.backend.common;
 
 import com.iteleme.backend.entity.Business;
+import org.springframework.beans.BeanUtils;
 import com.iteleme.backend.entity.Cart;
 import com.iteleme.backend.entity.DeliveryAddress;
 import com.iteleme.backend.entity.Food;
@@ -15,6 +16,7 @@ import com.iteleme.backend.vo.OrderItemVO;
 import com.iteleme.backend.vo.OrderVO;
 import com.iteleme.backend.vo.UserVO;
 
+// ===== [重构] 扁平 VO 改用 Spring BeanUtils.copyProperties 按同名属性批量复制，消除手写 set 样板化 =====
 /**
  * 实体与 VO 的转换工具类。
  */
@@ -30,15 +32,7 @@ public final class VoConverters {
             return null;
         }
         BusinessVO vo = new BusinessVO();
-        vo.setId(business.getId());
-        vo.setName(business.getName());
-        vo.setAddress(business.getAddress());
-        vo.setDescription(business.getDescription());
-        vo.setImage(business.getImage());
-        vo.setOrderTypeId(business.getOrderTypeId());
-        vo.setStartPrice(business.getStartPrice());
-        vo.setDeliveryPrice(business.getDeliveryPrice());
-        vo.setRemark(business.getRemark());
+        BeanUtils.copyProperties(business, vo);
         return vo;
     }
 
@@ -50,13 +44,7 @@ public final class VoConverters {
             return null;
         }
         FoodVO vo = new FoodVO();
-        vo.setId(food.getId());
-        vo.setName(food.getName());
-        vo.setDescription(food.getDescription());
-        vo.setImage(food.getImage());
-        vo.setPrice(food.getPrice());
-        vo.setBusinessId(food.getBusinessId());
-        vo.setRemark(food.getRemark());
+        BeanUtils.copyProperties(food, vo);
         return vo;
     }
 
@@ -83,12 +71,7 @@ public final class VoConverters {
             return null;
         }
         DeliveryAddressVO vo = new DeliveryAddressVO();
-        vo.setId(deliveryAddress.getId());
-        vo.setContactName(deliveryAddress.getContactName());
-        vo.setContactSex(deliveryAddress.getContactSex());
-        vo.setContactTel(deliveryAddress.getContactTel());
-        vo.setAddress(deliveryAddress.getAddress());
-        vo.setUserId(deliveryAddress.getUserId());
+        BeanUtils.copyProperties(deliveryAddress, vo);
         return vo;
     }
 
@@ -130,11 +113,7 @@ public final class VoConverters {
             return null;
         }
         UserVO vo = new UserVO();
-        vo.setId(user.getId());
-        vo.setName(user.getName());
-        vo.setSex(user.getSex());
-        vo.setAvatar(user.getAvatar());
-        vo.setDelFlag(user.getDelFlag());
+        BeanUtils.copyProperties(user, vo);
         return vo;
     }
 }
