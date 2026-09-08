@@ -25,6 +25,16 @@ public class Order {
     private BigDecimal orderTotal;
     /** 送货地址编号。 */
     private Integer addressId;
+    // ===== [重构] 下单时收货地址快照（订单不再依赖地址行，删除/修改地址不影响历史订单） =====
+    /** 下单时收货人姓名快照。 */
+    private String addressContactName;
+    /** 下单时收货人性别快照。 */
+    private Integer addressContactSex;
+    /** 下单时收货人电话快照。 */
+    private String addressContactTel;
+    /** 下单时收货地址快照。 */
+    private String addressDetail;
+    // ===== [重构结束] =====
     /** 订单状态。 */
     private Integer orderStatus;
 }

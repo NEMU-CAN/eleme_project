@@ -68,7 +68,7 @@ public class OrderServiceImpl implements OrderService {
         orderPriceCalculator.ensureMeetStartPrice(ctx.business(), foodTotal);
         BigDecimal orderTotal = orderPriceCalculator.orderTotal(ctx.business(), foodTotal);
 
-        Order created = orderWriter.write(userId, request, orderTotal, ctx.cartItems());
+        Order created = orderWriter.write(userId, request, orderTotal, ctx);
         return orderAssembler.assemble(created);
     }
 

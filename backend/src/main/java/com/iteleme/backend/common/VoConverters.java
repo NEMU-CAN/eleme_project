@@ -75,6 +75,25 @@ public final class VoConverters {
         return vo;
     }
 
+    // ===== [重构] 从订单的收货地址快照组装展示对象（历史订单不依赖地址行） =====
+    /**
+     * 将订单的收货地址快照转换为对外展示对象。
+     */
+    public static DeliveryAddressVO toDeliveryAddressVO(Order order) {
+        if (order == null) {
+            return null;
+        }
+        DeliveryAddressVO vo = new DeliveryAddressVO();
+        vo.setId(order.getAddressId());
+        vo.setContactName(order.getAddressContactName());
+        vo.setContactSex(order.getAddressContactSex());
+        vo.setContactTel(order.getAddressContactTel());
+        vo.setAddress(order.getAddressDetail());
+        vo.setUserId(order.getUserId());
+        return vo;
+    }
+    // ===== [重构结束] =====
+
     /**
      * 将订单明细实体转换为对外展示对象。
      */
@@ -91,7 +110,7 @@ public final class VoConverters {
     /**
      * 将订单实体和关联信息转换为对外展示对象。
      */
-    public static OrderVO toOrderVO(Order order, Business business, DeliveryAddress deliveryAddress) {
+    public static OrderVO toOrderVO(Order order, Business business, DeliveryAddressVO deliveryAddress) {
         OrderVO vo = new OrderVO();
         vo.setId(order.getId());
         vo.setUserId(order.getUserId());
@@ -101,7 +120,7 @@ public final class VoConverters {
         vo.setAddressId(order.getAddressId());
         vo.setOrderStatus(order.getOrderStatus());
         vo.setBusiness(toBusinessVO(business));
-        vo.setDeliveryAddress(toDeliveryAddressVO(deliveryAddress));
+        vo.setDeliveryAddress(deliveryAddress);
         return vo;
     }
 

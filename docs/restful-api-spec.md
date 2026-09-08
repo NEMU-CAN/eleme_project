@@ -581,6 +581,10 @@ Authorization: Bearer <token>
 | orderDate | varchar(20) | NN | 订购日期 |
 | orderTotal | decimal(7,2) | 默认 0.00, NN | 订单总价 |
 | daId | int | FK, NN | 所属送货地址编号 |
+| addressContactName | varchar(20) | 可空 | 下单时收货人姓名快照 |
+| addressContactSex | int | 可空 | 下单时收货人性别快照 |
+| addressContactTel | varchar(20) | 可空 | 下单时收货人电话快照 |
+| addressDetail | varchar(100) | 可空 | 下单时收货地址快照 |
 | orderState | int | 默认 0, NN | 订单状态 |
 
 ### 5.6 orderdetail（订单明细表）
