@@ -11,7 +11,7 @@ import java.util.List;
 public interface FoodMapper {
     @Select("""
             SELECT id, name, description, image, price,
-                   business_id AS businessId, remark
+                   business_id AS businessId, remark, stock
             FROM food
             WHERE business_id = #{businessId}
             ORDER BY id
@@ -20,7 +20,7 @@ public interface FoodMapper {
 
     @Select("""
             SELECT id, name, description, image, price,
-                   business_id AS businessId, remark
+                   business_id AS businessId, remark, stock
             FROM food
             WHERE id = #{foodId}
             """)
@@ -28,7 +28,7 @@ public interface FoodMapper {
 
     @Select("""
             SELECT id, name, description, image, price,
-                   business_id AS businessId, remark
+                   business_id AS businessId, remark, stock
             FROM food
             WHERE id = #{foodId} AND business_id = #{businessId}
             """)

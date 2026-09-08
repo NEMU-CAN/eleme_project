@@ -27,4 +27,8 @@ public class Food {
     private Integer businessId;
     /** 备注信息。 */
     private String remark;
+    // ===== [库存 新增] 库存展示（NULL 表示不限；轻量版只展示，不校验/不扣减） =====
+    /** 库存（NULL 表示不限）。 */
+    private Integer stock;
+    // ===== [库存 新增结束] =====
 }

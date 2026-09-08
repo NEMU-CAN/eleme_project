@@ -42,6 +42,7 @@ CREATE TABLE `food` (
   `price` decimal(5,2) NOT NULL COMMENT '食品价格',
   `business_id` int(11) NOT NULL COMMENT '所属商家编号',
   `remark` varchar(40) DEFAULT NULL COMMENT '备注',
+  `stock` int(11) DEFAULT NULL COMMENT '库存（NULL 表示不限）',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
 
