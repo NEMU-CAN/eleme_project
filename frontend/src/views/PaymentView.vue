@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/SiteHeader.vue'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
-import { formatCny, formatOrderTime } from '@/utils/format'
+import { formatCny, formatOrderStatus, formatOrderTime } from '@/utils/format'
 import type { PaymentMethod } from '@/types'
 
 const route = useRoute()
@@ -12,18 +12,22 @@ const router = useRouter()
 const store = useHungryStore()
 const error = ref('')
 
-// 支付页根据路由参数定位到目标订单。
 const orderId = computed(() => String(route.params.orderId || ''))
-// 当前支付中的订单。
 const order = computed(() => store.getOrder(orderId.value))
-// 订单明细展开状态。
 const expanded = ref(true)
-// 当前选中的支付方式。
-const selectedMethod = ref<PaymentMethod>('alipay')
+const selectedMethod = computed<PaymentMethod>({
+  get() {
+    return store.state.paymentMethod
+  },
+  set(value) {
+    store.setPaymentMethod(value)
+  },
+})
 const isPaying = computed(() => store.state.loading.action)
+const detailRows = computed(() => order.value?.items ?? [])
 
 onMounted(async () => {
-  if (!store.state.user) {
+  if (!store.isAuthenticated.value) {
     router.replace({ path: '/login', query: { redirect: route.fullPath } })
     return
   }
@@ -36,25 +40,22 @@ onMounted(async () => {
   }
 })
 
-// 订单变化时，把支付方式同步到当前订单默认值。
-watch(
-  order,
-  (value) => {
-    selectedMethod.value = value?.paymentMethod ?? 'alipay'
-  },
-  { immediate: true },
-)
+function statusClass(status: string) {
+  if (status === 'canceled') {
+    return 'status-pill status-pill--danger'
+  }
+  if (status === 'paid' || status === 'completed') {
+    return 'status-pill status-pill--success'
+  }
+  return 'status-pill status-pill--warning'
+}
 
-// 订单商品明细列表，便于模板循环展示。
-const detailRows = computed(() => order.value?.items ?? [])
-
-// 确认支付后，把订单状态改成已支付并返回订单页。
 async function confirmPayment() {
   if (!order.value) {
     return
   }
 
-  if (order.value.status === 'paid') {
+  if (order.value.status !== 'unpaid') {
     router.push('/orders')
     return
   }
@@ -68,7 +69,6 @@ async function confirmPayment() {
   }
 }
 
-// 返回结算页；没有订单时直接回订单列表。
 function back() {
   if (order.value) {
     router.push(`/checkout/${order.value.id}`)
@@ -80,11 +80,9 @@ function back() {
 
 <template>
   <div class="page page--bare">
-    <!-- 支付页头部。 -->
     <SiteHeader title="在线支付" eyebrow="完成订单收尾" backable @back="back" />
 
     <template v-if="order">
-      <!-- 订单金额与明细展开区。 -->
       <section class="page__content">
         <div class="order-summary panel">
           <div class="order-summary__head">
@@ -93,11 +91,13 @@ function back() {
               <h3 class="order-summary__title">{{ order.merchantName }}</h3>
               <p class="order-summary__text">创建时间 {{ formatOrderTime(order.createdAt) }}</p>
             </div>
-            <span v-if="order.status === 'pending'" class="status-pill status-pill--warning">待支付</span>
-            <span v-else class="status-pill status-pill--success">已支付</span>
+            <span :class="statusClass(order.status)">
+              <UiIcon name="clock" :size="14" />
+              {{ formatOrderStatus(order.status) }}
+            </span>
           </div>
 
-          <button type="button" class="timeline-item panel--soft" @click="expanded = !expanded">
+          <button type="button" class="timeline-item panel--soft payment-summary" @click="expanded = !expanded">
             <div class="timeline-item__top">
               <div>
                 <p class="timeline-item__name">订单金额 {{ formatCny(order.total) }}</p>
@@ -126,7 +126,6 @@ function back() {
         </div>
       </section>
 
-      <!-- 支付方式选择区。 -->
       <section class="page__content section">
         <div class="info-card panel">
           <div class="info-card__header">
@@ -142,12 +141,12 @@ function back() {
           <div class="timeline-list">
             <button
               type="button"
-              class="timeline-item panel--soft"
-              :class="{ 'sort-chip--active': selectedMethod === 'alipay' }"
+              class="timeline-item panel--soft payment-method"
+              :class="{ 'payment-method--active': selectedMethod === 'alipay' }"
               @click="selectedMethod = 'alipay'"
             >
               <div class="timeline-item__top">
-                <div class="merchant-card__metrics" style="align-items: center">
+                <div class="merchant-card__metrics payment-method__content">
                   <img src="/eleme/alipay.png" alt="支付宝" width="112" height="32" />
                   <div>
                     <p class="timeline-item__name">支付宝</p>
@@ -162,12 +161,12 @@ function back() {
             </button>
             <button
               type="button"
-              class="timeline-item panel--soft"
-              :class="{ 'sort-chip--active': selectedMethod === 'wechat' }"
+              class="timeline-item panel--soft payment-method"
+              :class="{ 'payment-method--active': selectedMethod === 'wechat' }"
               @click="selectedMethod = 'wechat'"
             >
               <div class="timeline-item__top">
-                <div class="merchant-card__metrics" style="align-items: center">
+                <div class="merchant-card__metrics payment-method__content">
                   <img src="/eleme/wechat.png" alt="微信支付" width="112" height="32" />
                   <div>
                     <p class="timeline-item__name">微信支付</p>
@@ -184,11 +183,10 @@ function back() {
         </div>
       </section>
 
-      <!-- 确认支付动作。 -->
       <section class="page__content section">
-        <p v-if="error" class="field__hint" style="color: var(--danger); margin-bottom: 12px">{{ error }}</p>
-        <button type="button" class="primary-button" style="width: 100%" :disabled="isPaying" @click="confirmPayment">
-          {{ isPaying ? '支付处理中' : order.status === 'paid' ? '返回订单列表' : `确认支付 ${formatCny(order.total)}` }}
+        <p v-if="error" class="field__hint field__hint--danger">{{ error }}</p>
+        <button type="button" class="primary-button checkout-action" :disabled="isPaying" @click="confirmPayment">
+          {{ isPaying ? '支付处理中' : order.status === 'unpaid' ? `确认支付 ${formatCny(order.total)}` : '返回订单列表' }}
         </button>
       </section>
     </template>

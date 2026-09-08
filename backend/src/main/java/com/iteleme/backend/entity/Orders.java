@@ -16,9 +16,17 @@ public class Orders {
     private String orderNo;
     private Integer userId;
     private Integer businessId;
+    private String userNickname;
+    private String userPhone;
+    private String businessName;
+    private String businessAddress;
+    private String receiverName;
+    private String receiverTel;
+    private Integer receiverGender;
+    private String receiverAddress;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime date;
+    private LocalDateTime orderDate;
 
     private BigDecimal deliveryPrice;
     private BigDecimal totalAmount;

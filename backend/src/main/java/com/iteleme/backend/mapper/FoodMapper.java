@@ -20,5 +20,11 @@ public interface FoodMapper {
 
     int deduct(@Param("id") Integer id, @Param("quantity") Integer quantity);
 
+    int reserveStock(@Param("id") Integer id, @Param("quantity") Integer quantity);
+
+    int releaseReservedStock(@Param("id") Integer id, @Param("quantity") Integer quantity);
+
+    int consumeReservedStock(@Param("id") Integer id, @Param("quantity") Integer quantity);
+
     Integer nextId();
 }

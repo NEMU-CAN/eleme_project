@@ -12,7 +12,7 @@ public record FoodSaveRequest(
         String image,
         @NotNull(message = "菜品价格不能为空") BigDecimal price,
         @NotNull(message = "商家ID不能为空") Integer businessId,
-        Integer stock,
+        @jakarta.validation.constraints.Min(value = 0, message = "库存不能小于0") Integer stock,
         Integer status
 ) {
 }

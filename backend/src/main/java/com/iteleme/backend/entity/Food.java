@@ -17,5 +17,6 @@ public class Food {
     private BigDecimal price;
     private Integer businessId;
     private Integer stock;
+    private Integer reservedStock;
     private Integer status;
 }

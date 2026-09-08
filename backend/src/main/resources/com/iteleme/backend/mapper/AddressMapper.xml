@@ -31,8 +31,8 @@
     </select>
 
     <insert id="insert" parameterType="com.iteleme.backend.entity.DeliveryAddress">
-        insert into `delivery_address` (`id`, `user_id`, `address`, `contact_name`, `contact_tel`, `contact_sex`, `is_deleted`)
-        values (#{id}, #{userId}, #{address}, #{contactName}, #{contactTel}, #{contactSex}, #{isDeleted})
+        insert into `delivery_address` (`id`, `user_id`, `address`, `contact_name`, `contact_tel`, `contact_gender`, `is_deleted`)
+        values (#{id}, #{userId}, #{address}, #{contactName}, #{contactTel}, #{contactGender}, #{isDeleted})
     </insert>
 
     <update id="update" parameterType="com.iteleme.backend.entity.DeliveryAddress">
@@ -40,7 +40,7 @@
         set `address` = #{address},
             `contact_name` = #{contactName},
             `contact_tel` = #{contactTel},
-            `contact_sex` = #{contactSex},
+            `contact_gender` = #{contactGender},
             `is_deleted` = #{isDeleted}
         where `id` = #{id}
           and `user_id` = #{userId}

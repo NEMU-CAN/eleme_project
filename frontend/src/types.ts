@@ -1,5 +1,8 @@
 export type PaymentMethod = 'alipay' | 'wechat'
-export type OrderStatus = 'pending' | 'paid'
+export type OrderStatus = 'canceled' | 'unpaid' | 'paid' | 'completed'
+export type BusinessStatus = 'deleted' | 'closed' | 'open'
+export type FoodStatus = 'offline' | 'online'
+export type GenderType = 0 | 1 | 2
 
 export interface CategoryItem {
   id: string
@@ -8,6 +11,8 @@ export interface CategoryItem {
   route: string
 }
 
+export interface TasteItem extends CategoryItem {}
+
 export interface MenuItem {
   id: string
   businessId: string
@@ -15,6 +20,9 @@ export interface MenuItem {
   description: string
   price: number
   image: string
+  stock: number
+  reservedStock: number
+  status: FoodStatus
   remark?: string
 }
 
@@ -30,20 +38,29 @@ export interface Merchant {
   image: string
   address: string
   description: string
-  orderTypeId: number
-  minOrder: number
+  tasteId: number
+  tasteName: string
+  startPrice: number
   deliveryFee: number
-  remark?: string
+  status: BusinessStatus
   menuSections: MenuSection[]
+  orderTypeId?: number
+  minOrder?: number
+  remark?: string
 }
 
 export interface Address {
   id: string
+  userId: string
+  address: string
+  contactName: string
+  contactTel: string
+  contactGender: GenderType
+  isDeleted: boolean
   name: string
   phone: string
   detail: string
-  sex: 0 | 1
-  userId: string
+  sex: GenderType
 }
 
 export interface CartLine {
@@ -55,40 +72,57 @@ export interface CartLine {
   price: number
   image: string
   quantity: number
+  stock: number
+  reservedStock: number
+  status: FoodStatus
+  subtotal?: number
 }
 
 export interface OrderRecord {
   id: string
+  orderNo: string
   userId: string
-  merchantId: string
+  userNickname: string
+  userPhone: string
+  businessId: string
+  businessName: string
+  businessAddress: string
   merchantName: string
   merchantImage: string
-  status: OrderStatus
-  paymentMethod: PaymentMethod
+  receiverName: string
+  receiverTel: string
+  receiverGender: GenderType
+  receiverAddress: string
   addressId: string
   addressName: string
   addressPhone: string
   addressDetail: string
+  status: OrderStatus
+  orderStatus: number
+  itemCount: number
   items: CartLine[]
   deliveryFee: number
   subtotal: number
   total: number
   createdAt: string
   paidAt?: string
+  completedAt?: string
 }
 
 export interface UserProfile {
   id: string
+  nickname: string
   name: string
   phone: string
-  gender: 'male' | 'female'
-  sex: 0 | 1
   avatar: string
-  delFlag?: number
+  gender: GenderType
+  role: number
+  status: number
+  token?: string | null
 }
 
 export interface CheckoutDraft {
-  merchantId: string
+  businessId: string
   paymentMethod: PaymentMethod
   addressId: string
   createdOrderId: string | null

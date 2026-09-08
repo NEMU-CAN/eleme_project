@@ -4,48 +4,45 @@ import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/SiteHeader.vue'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
+import type { GenderType } from '@/types'
 
 const router = useRouter()
 const route = useRoute()
 const store = useHungryStore()
 
-// 注册表单字段与后端 UserCreateRequest 对齐。
+const redirect = route.query.redirect
+
 const form = reactive({
-  userId: store.state.user?.id ?? '',
-  userName: store.state.user?.name ?? '',
+  phone: store.state.user?.phone ?? '',
+  nickname: store.state.user?.nickname ?? '',
   password: '',
   confirm: '',
-  gender: (store.state.user?.gender ?? 'male') as 'male' | 'female',
+  gender: (store.state.user?.gender ?? 0) as GenderType,
+  avatar: '',
 })
 
-// 只保留一条错误提示，避免表单过度干扰。
 const error = ref('')
+const success = ref('')
 const loading = ref(false)
 
-// 校验字段后创建后端用户。
 async function submit() {
-  if (!form.userId.trim()) {
-    error.value = '请输入用户编号'
+  if (!form.phone.trim()) {
+    error.value = '请输入手机号'
     return
   }
 
-  if (form.userId.length > 20) {
-    error.value = '用户编号不能超过 20 位'
+  if (!form.nickname.trim()) {
+    error.value = '请输入昵称'
     return
   }
 
-  if (!form.userName.trim()) {
-    error.value = '请输入用户姓名'
+  if (form.nickname.length > 20) {
+    error.value = '昵称不能超过 20 个字符'
     return
   }
 
-  if (form.userName.length > 20) {
-    error.value = '用户姓名不能超过 20 位'
-    return
-  }
-
-  if (!form.password || form.password.length > 20) {
-    error.value = '请输入 1-20 位密码'
+  if (!form.password.trim()) {
+    error.value = '请输入密码'
     return
   }
 
@@ -57,15 +54,16 @@ async function submit() {
   try {
     loading.value = true
     error.value = ''
+    success.value = ''
     await store.register({
-      userId: form.userId.trim(),
+      phone: form.phone.trim(),
       password: form.password,
-      userName: form.userName.trim(),
-      userSex: form.gender === 'female' ? 0 : 1,
-      userImg: null,
+      nickname: form.nickname.trim(),
+      gender: form.gender,
+      avatar: form.avatar.trim() || null,
     })
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/me'
-    router.push(redirect)
+    success.value = '注册成功，已自动登录'
+    router.push(typeof redirect === 'string' ? redirect : '/me')
   } catch (cause) {
     error.value = store.messageFromError(cause)
   } finally {
@@ -76,28 +74,25 @@ async function submit() {
 
 <template>
   <div class="auth-shell">
-    <!-- 注册页头部。 -->
-    <SiteHeader title="用户注册" eyebrow="创建后端账号" backable compact @back="router.push('/login')" />
+    <SiteHeader title="用户注册" eyebrow="创建新账号" backable compact @back="router.push('/login')" />
 
-    <!-- 注册说明卡。 -->
     <section class="auth-hero">
       <div class="auth-hero__card">
         <UiIcon name="check" :size="20" />
-        <h2 class="auth-hero__title">注册后端账号</h2>
-        <p class="auth-hero__text">提交后会调用用户创建接口，并用返回的账户资料进入个人页。</p>
+        <h2 class="auth-hero__title">注册后直接进入系统</h2>
+        <p class="auth-hero__text">注册后会自动登录，并同步生成当前账号的令牌。</p>
       </div>
     </section>
 
-    <!-- 注册表单。 -->
     <section class="auth-card panel">
       <div class="form-stack">
         <label class="field">
-          <span class="field__label">用户编号</span>
-          <input v-model="form.userId" class="field__control" type="text" autocomplete="username" placeholder="请输入用户编号" />
+          <span class="field__label">手机号</span>
+          <input v-model="form.phone" class="field__control" type="tel" autocomplete="username" placeholder="请输入手机号" />
         </label>
         <label class="field">
-          <span class="field__label">用户姓名</span>
-          <input v-model="form.userName" class="field__control" type="text" autocomplete="name" placeholder="请输入用户姓名" />
+          <span class="field__label">昵称</span>
+          <input v-model="form.nickname" class="field__control" type="text" autocomplete="nickname" placeholder="请输入昵称" />
         </label>
         <label class="field">
           <span class="field__label">密码</span>
@@ -107,22 +102,30 @@ async function submit() {
           <span class="field__label">确认密码</span>
           <input v-model="form.confirm" class="field__control" type="password" placeholder="再次输入密码" />
         </label>
+        <label class="field">
+          <span class="field__label">头像地址（可选）</span>
+          <input v-model="form.avatar" class="field__control" type="url" placeholder="可粘贴图片地址或留空" />
+        </label>
         <div class="field">
           <span class="field__label">性别</span>
           <div class="chip-row">
-            <button type="button" class="chip" :class="{ 'chip--active': form.gender === 'male' }" @click="form.gender = 'male'">男</button>
-            <button type="button" class="chip" :class="{ 'chip--active': form.gender === 'female' }" @click="form.gender = 'female'">女</button>
+            <button type="button" class="chip" :class="{ 'chip--active': form.gender === 0 }" @click="form.gender = 0">保密</button>
+            <button type="button" class="chip" :class="{ 'chip--active': form.gender === 1 }" @click="form.gender = 1">男</button>
+            <button type="button" class="chip" :class="{ 'chip--active': form.gender === 2 }" @click="form.gender = 2">女</button>
           </div>
         </div>
       </div>
 
       <p v-if="error" class="field__hint" style="color: var(--danger); margin-top: 12px">{{ error }}</p>
+      <p v-else-if="success" class="field__hint" style="color: var(--success); margin-top: 12px">{{ success }}</p>
 
       <div class="auth-card__footer" style="margin-top: 16px">
         <button type="button" class="primary-button" :disabled="loading" @click="submit">
           {{ loading ? '注册中' : '注册' }}
         </button>
-        <button type="button" class="secondary-button" @click="router.push('/login')">返回登录</button>
+        <button type="button" class="secondary-button" @click="router.push('/login')">
+          返回登录
+        </button>
       </div>
     </section>
   </div>

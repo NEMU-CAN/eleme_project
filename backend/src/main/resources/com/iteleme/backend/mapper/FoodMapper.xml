@@ -32,8 +32,8 @@
     </select>
 
     <insert id="insert" parameterType="com.iteleme.backend.entity.Food">
-        insert into `food` (`id`, `name`, `description`, `image`, `price`, `business_id`, `stock`, `status`)
-        values (#{id}, #{name}, #{description}, #{image}, #{price}, #{businessId}, #{stock}, #{status})
+        insert into `food` (`id`, `name`, `description`, `image`, `price`, `business_id`, `stock`, `reserved_stock`, `status`)
+        values (#{id}, #{name}, #{description}, #{image}, #{price}, #{businessId}, #{stock}, #{reservedStock}, #{status})
     </insert>
 
     <update id="update" parameterType="com.iteleme.backend.entity.Food">
@@ -44,6 +44,7 @@
             `price` = #{price},
             `business_id` = #{businessId},
             `stock` = #{stock},
+            `reserved_stock` = #{reservedStock},
             `status` = #{status}
         where `id` = #{id}
     </update>
@@ -59,5 +60,28 @@
         set `stock` = `stock` - #{quantity}
         where `id` = #{id}
           and `stock` &gt;= #{quantity}
+    </update>
+
+    <update id="reserveStock">
+        update `food`
+        set `reserved_stock` = `reserved_stock` + #{quantity}
+        where `id` = #{id}
+          and (`stock` - `reserved_stock`) &gt;= #{quantity}
+    </update>
+
+    <update id="releaseReservedStock">
+        update `food`
+        set `reserved_stock` = `reserved_stock` - #{quantity}
+        where `id` = #{id}
+          and `reserved_stock` &gt;= #{quantity}
+    </update>
+
+    <update id="consumeReservedStock">
+        update `food`
+        set `stock` = `stock` - #{quantity},
+            `reserved_stock` = `reserved_stock` - #{quantity}
+        where `id` = #{id}
+          and `stock` &gt;= #{quantity}
+          and `reserved_stock` &gt;= #{quantity}
     </update>
 </mapper>

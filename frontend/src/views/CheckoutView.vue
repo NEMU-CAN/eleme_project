@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/SiteHeader.vue'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
-import { formatCny, formatOrderTime, maskPhone } from '@/utils/format'
+import { formatCny, formatGender, formatOrderStatus, formatOrderTime, maskPhone } from '@/utils/format'
 import type { PaymentMethod } from '@/types'
 
 const route = useRoute()
@@ -12,13 +12,23 @@ const router = useRouter()
 const store = useHungryStore()
 const error = ref('')
 
-// 结算页依据路由里的订单号读取当前订单。
 const orderId = computed(() => String(route.params.orderId || ''))
-// 当前待结算订单。
 const order = computed(() => store.getOrder(orderId.value))
+const selectedPayment = computed<PaymentMethod>({
+  get() {
+    return store.state.paymentMethod
+  },
+  set(value) {
+    store.setPaymentMethod(value)
+  },
+})
+const paymentMethods: Array<{ id: PaymentMethod; title: string; image: string; subtitle: string }> = [
+  { id: 'alipay', title: '支付宝', image: '/eleme/alipay.png', subtitle: '即时确认，使用最顺手' },
+  { id: 'wechat', title: '微信支付', image: '/eleme/wechat.png', subtitle: '扫码和快捷支付都支持' },
+]
 
 onMounted(async () => {
-  if (!store.state.user) {
+  if (!store.isAuthenticated.value) {
     router.replace({ path: '/login', query: { redirect: route.fullPath } })
     return
   }
@@ -31,43 +41,34 @@ onMounted(async () => {
   }
 })
 
-// 返回商家详情页；如果订单不存在，就回到商家列表。
 function goBack() {
   if (order.value) {
-    router.push(`/merchant/${order.value.merchantId}`)
+    router.push(`/merchant/${order.value.businessId}`)
     return
   }
   router.push('/businesses')
 }
 
-// 支付方式由前端选择，最终支付动作交给后端订单支付接口。
-const paymentMethods: Array<{ id: PaymentMethod; title: string; image: string; subtitle: string }> = [
-  { id: 'alipay', title: '支付宝', image: '/eleme/alipay.png', subtitle: '即时确认，使用最顺手' },
-  { id: 'wechat', title: '微信支付', image: '/eleme/wechat.png', subtitle: '扫码和快捷支付都支持' },
-]
-
-// 当前选中的支付方式，直接跟订单草稿同步。
-const selectedPayment = computed<PaymentMethod>({
-  get() {
-    return store.state.paymentMethod
-  },
-  set(value) {
-    store.setPaymentMethod(value)
-  },
-})
-
-// 选择某个支付方式。
 function choosePayment(method: PaymentMethod) {
   selectedPayment.value = method
 }
 
-// 进入支付页，完成最终支付动作。
+function statusClass(status: string) {
+  if (status === 'canceled') {
+    return 'status-pill status-pill--danger'
+  }
+  if (status === 'paid' || status === 'completed') {
+    return 'status-pill status-pill--success'
+  }
+  return 'status-pill status-pill--warning'
+}
+
 function proceed() {
   if (!order.value) {
     return
   }
 
-  if (order.value.status === 'paid') {
+  if (order.value.status !== 'unpaid') {
     router.push('/orders')
     return
   }
@@ -78,11 +79,9 @@ function proceed() {
 
 <template>
   <div class="page page--bare">
-    <!-- 结算页头部。 -->
     <SiteHeader title="确认订单" eyebrow="结算前最后一步" backable @back="goBack" />
 
     <template v-if="order">
-      <!-- 订单基础信息与金额汇总。 -->
       <section class="page__content">
         <div class="order-summary panel">
           <div class="order-summary__head">
@@ -91,14 +90,28 @@ function proceed() {
               <h3 class="order-summary__title">{{ order.merchantName }}</h3>
               <p class="order-summary__text">下单时间 {{ formatOrderTime(order.createdAt) }}</p>
             </div>
-            <span v-if="order.status === 'pending'" class="status-pill status-pill--warning">待支付</span>
-            <span v-else class="status-pill status-pill--success">已支付</span>
+            <span :class="statusClass(order.status)">
+              <UiIcon name="clock" :size="14" />
+              {{ formatOrderStatus(order.status) }}
+            </span>
           </div>
 
-          <div class="info-card panel--soft" style="padding: 12px">
-            <p class="order-summary__text">订单配送至</p>
-            <h4 class="info-card__title" style="margin-top: 4px">{{ order.addressDetail || '地址信息待同步' }}</h4>
-            <p class="info-card__text">{{ order.addressName || '收货人待同步' }} · {{ maskPhone(order.addressPhone) }}</p>
+          <div class="info-card panel--soft checkout-address">
+            <div class="info-card__header">
+              <div>
+                <p class="eyebrow">收货信息</p>
+                <h4 class="info-card__title">{{ order.addressName || '地址信息待同步' }}</h4>
+              </div>
+              <span class="status-pill">
+                <UiIcon name="pin" :size="14" />
+                {{ formatGender(order.receiverGender) }}
+              </span>
+            </div>
+            <p class="info-card__text">
+              {{ order.addressDetail || '详细地址待同步' }}
+              <br />
+              {{ maskPhone(order.addressPhone) }}
+            </p>
           </div>
 
           <div class="order-summary__list">
@@ -119,7 +132,6 @@ function proceed() {
         </div>
       </section>
 
-      <!-- 支付方式选择区。 -->
       <section class="page__content section">
         <div class="info-card panel">
           <div class="info-card__header">
@@ -137,12 +149,12 @@ function proceed() {
               v-for="method in paymentMethods"
               :key="method.id"
               type="button"
-              class="timeline-item panel--soft"
-              :class="{ 'sort-chip--active': selectedPayment === method.id }"
+              class="timeline-item panel--soft payment-method"
+              :class="{ 'payment-method--active': selectedPayment === method.id }"
               @click="choosePayment(method.id)"
             >
               <div class="timeline-item__top">
-                <div class="merchant-card__metrics" style="align-items: center">
+                <div class="merchant-card__metrics payment-method__content">
                   <img :src="method.image" :alt="method.title" width="112" height="32" />
                   <div>
                     <p class="timeline-item__name">{{ method.title }}</p>
@@ -159,11 +171,10 @@ function proceed() {
         </div>
       </section>
 
-      <!-- 去支付按钮。 -->
       <section class="page__content section">
-        <p v-if="error" class="field__hint" style="color: var(--danger); margin-bottom: 12px">{{ error }}</p>
-        <button type="button" class="primary-button" style="width: 100%" :disabled="store.state.loading.orders" @click="proceed">
-          {{ store.state.loading.orders ? '正在同步订单' : order.status === 'paid' ? '返回订单列表' : '去支付' }}
+        <p v-if="error" class="field__hint field__hint--danger">{{ error }}</p>
+        <button type="button" class="primary-button checkout-action" :disabled="store.state.loading.orders" @click="proceed">
+          {{ store.state.loading.orders ? '正在同步订单' : order.status === 'unpaid' ? '去支付' : '返回订单列表' }}
         </button>
       </section>
     </template>

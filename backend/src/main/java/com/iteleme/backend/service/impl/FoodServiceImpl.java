@@ -50,6 +50,7 @@ public class FoodServiceImpl implements FoodService {
                 request.price(),
                 request.businessId(),
                 request.stock() == null ? 0 : request.stock(),
+                0,
                 request.status() == null ? FoodStatus.ONLINE : request.status()
         );
         foodMapper.insert(food);
@@ -69,7 +70,11 @@ public class FoodServiceImpl implements FoodService {
         food.setDescription(request.description() != null ? request.description() : food.getDescription());
         food.setImage(request.image() != null ? request.image() : food.getImage());
         food.setPrice(request.price() != null ? request.price() : food.getPrice());
-        food.setStock(request.stock() != null ? request.stock() : food.getStock());
+        int nextStock = request.stock() != null ? request.stock() : food.getStock();
+        if (nextStock < food.getReservedStock()) {
+            throw new BadRequestException("库存不能小于已预占库存");
+        }
+        food.setStock(nextStock);
         food.setStatus(request.status() != null ? request.status() : food.getStatus());
 
         foodMapper.update(food);

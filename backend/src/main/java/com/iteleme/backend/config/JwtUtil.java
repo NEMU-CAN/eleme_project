@@ -8,6 +8,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,7 +26,7 @@ public final class JwtUtil {
 
     public static String create(Integer userId, Integer role) {
         String header = encode("{\"alg\":\"HS256\",\"typ\":\"JWT\"}");
-        String payload = encode("{\"sub\":\"" + userId + "\",\"role\":" + role + ",\"iat\":" + Instant.now().getEpochSecond() + "}");
+        String payload = encode("{\"sub\":\"" + userId + "\",\"role\":" + role + ",\"iat\":" + Instant.now().getEpochSecond() + ",\"jti\":\"" + UUID.randomUUID().toString().replace("-", "") + "\"}");
         return header + "." + payload + "." + sign(header + "." + payload);
     }
 

@@ -16,4 +16,5 @@ public class User {
     private Integer gender;
     private Integer role;
     private Integer status;
+    private String currentTokenHash;
 }

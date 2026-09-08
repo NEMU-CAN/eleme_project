@@ -8,7 +8,7 @@ public record DeliveryAddressVO(
         String address,
         String contactName,
         String contactTel,
-        Integer contactSex
+        Integer contactGender
 ) {
     public static DeliveryAddressVO from(DeliveryAddress address) {
         return new DeliveryAddressVO(
@@ -17,7 +17,7 @@ public record DeliveryAddressVO(
                 address.getAddress(),
                 address.getContactName(),
                 address.getContactTel(),
-                address.getContactSex()
+                address.getContactGender()
         );
     }
 }

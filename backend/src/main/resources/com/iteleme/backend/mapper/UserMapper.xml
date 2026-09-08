@@ -17,8 +17,8 @@
     </select>
 
     <insert id="insert" parameterType="com.iteleme.backend.entity.User">
-        insert into `user` (`id`, `nickname`, `password`, `phone`, `avatar`, `gender`, `role`, `status`)
-        values (#{id}, #{nickname}, #{password}, #{phone}, #{avatar}, #{gender}, #{role}, #{status})
+        insert into `user` (`id`, `nickname`, `password`, `phone`, `avatar`, `gender`, `role`, `status`, `current_token_hash`)
+        values (#{id}, #{nickname}, #{password}, #{phone}, #{avatar}, #{gender}, #{role}, #{status}, #{currentTokenHash})
     </insert>
 
     <update id="update" parameterType="com.iteleme.backend.entity.User">
@@ -29,7 +29,8 @@
             `avatar` = #{avatar},
             `gender` = #{gender},
             `role` = #{role},
-            `status` = #{status}
+            `status` = #{status},
+            `current_token_hash` = #{currentTokenHash}
         where `id` = #{id}
     </update>
 </mapper>

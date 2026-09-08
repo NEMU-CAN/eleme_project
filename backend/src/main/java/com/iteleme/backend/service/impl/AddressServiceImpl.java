@@ -3,6 +3,7 @@ package com.iteleme.backend.service.impl;
 import com.iteleme.backend.context.CurrentUserContext;
 import com.iteleme.backend.dto.DeliveryAddressSaveRequest;
 import com.iteleme.backend.entity.DeliveryAddress;
+import com.iteleme.backend.constant.GenderType;
 import com.iteleme.backend.exception.NotFoundException;
 import com.iteleme.backend.mapper.AddressMapper;
 import com.iteleme.backend.service.AddressService;
@@ -39,7 +40,7 @@ public class AddressServiceImpl implements AddressService {
                 request.address(),
                 request.contactName(),
                 request.contactTel(),
-                request.contactSex(),
+                request.contactGender() == null ? GenderType.SECRET : request.contactGender(),
                 0
         );
         addressMapper.insert(address);
@@ -53,7 +54,7 @@ public class AddressServiceImpl implements AddressService {
         address.setAddress(request.address());
         address.setContactName(request.contactName());
         address.setContactTel(request.contactTel());
-        address.setContactSex(request.contactSex());
+        address.setContactGender(request.contactGender() == null ? address.getContactGender() : request.contactGender());
         address.setIsDeleted(0);
         addressMapper.update(address);
         return DeliveryAddressVO.from(address);

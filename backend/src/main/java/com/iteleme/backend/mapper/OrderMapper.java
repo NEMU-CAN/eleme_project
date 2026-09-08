@@ -27,6 +27,10 @@ public interface OrderMapper {
 
     int updateStatus(@Param("id") Integer id, @Param("orderStatus") Integer orderStatus);
 
+    int updateStatusIfMatch(@Param("id") Integer id,
+                            @Param("oldStatus") Integer oldStatus,
+                            @Param("newStatus") Integer newStatus);
+
     int insertDetail(OrderDetail detail);
 
     List<OrderDetail> details(@Param("orderId") Integer orderId);

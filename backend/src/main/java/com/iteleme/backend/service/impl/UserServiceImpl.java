@@ -13,9 +13,9 @@ import com.iteleme.backend.exception.ForbiddenException;
 import com.iteleme.backend.exception.NotFoundException;
 import com.iteleme.backend.exception.UnauthorizedException;
 import com.iteleme.backend.mapper.UserMapper;
-import com.iteleme.backend.service.TokenBlacklistService;
 import com.iteleme.backend.service.UserService;
 import com.iteleme.backend.vo.UserVO;
+import com.iteleme.backend.support.TokenHashUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
-    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     @Transactional
@@ -40,13 +39,15 @@ public class UserServiceImpl implements UserService {
                 request.avatar(),
                 request.gender(),
                 UserRole.CUSTOMER,
-                0
+                0,
+                null
         );
         userMapper.insert(user);
         return UserVO.from(user);
     }
 
     @Override
+    @Transactional
     public UserVO login(String phone, String password) {
         User user = userMapper.findByPhone(phone);
         if (user == null || !password.equals(user.getPassword())) {
@@ -55,7 +56,10 @@ public class UserServiceImpl implements UserService {
         if (user.getStatus() != 0) {
             throw new ForbiddenException("账号已禁用");
         }
-        return UserVO.from(user).withToken(JwtUtil.create(user.getId(), user.getRole()));
+        String token = JwtUtil.create(user.getId(), user.getRole());
+        user.setCurrentTokenHash(TokenHashUtil.hash(token));
+        userMapper.update(user);
+        return UserVO.from(user).withToken(token);
     }
 
     @Override
@@ -84,14 +88,19 @@ public class UserServiceImpl implements UserService {
         if (request.gender() != null) {
             user.setGender(request.gender());
         }
+        // 资料变更后主动让本地 token 失效，要求客户端重新登录。
+        user.setCurrentTokenHash(null);
         userMapper.update(user);
         return UserVO.from(user);
     }
 
     @Override
+    @Transactional
     public void logout() {
-        String token = CurrentUserContext.require().token();
-        tokenBlacklistService.revoke(token);
+        User user = loadCurrentUser();
+        // 单会话模式下，登出就是清空当前有效 token 的哈希。
+        user.setCurrentTokenHash(null);
+        userMapper.update(user);
     }
 
     private User loadCurrentUser() {

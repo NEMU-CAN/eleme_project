@@ -2,7 +2,7 @@
 import { RouterLink } from 'vue-router'
 import UiIcon from '@/components/UiIcon.vue'
 import type { Merchant } from '@/types'
-import { formatCny } from '@/utils/format'
+import { formatBusinessStatus, formatCny } from '@/utils/format'
 
 // 商家卡片用于首页推荐区和商家列表页，承载一整张商户信息卡。
 withDefaults(
@@ -30,18 +30,18 @@ withDefaults(
         </div>
         <span class="merchant-card__tag">
           <UiIcon name="check" :size="14" />
-          {{ merchant.remark || '后端同步' }}
+          {{ formatBusinessStatus(merchant.status) }}
         </span>
       </div>
       <div class="merchant-card__metrics">
         <span class="merchant-card__metric">分类 {{ merchant.orderTypeId }}</span>
-        <span class="merchant-card__metric">{{ formatCny(merchant.minOrder) }} 起送</span>
-        <span class="merchant-card__metric">{{ formatCny(merchant.deliveryFee) }} 配送</span>
+        <span class="merchant-card__metric">{{ formatCny(merchant.minOrder ?? 0) }} 起送</span>
+        <span class="merchant-card__metric">{{ formatCny(merchant.deliveryFee ?? 0) }} 配送</span>
       </div>
       <div class="merchant-card__footer">
         <span>{{ merchant.description || '暂无商家介绍' }}</span>
       </div>
-      <p class="merchant-card__promo">{{ merchant.remark || '点击进入后将从后端加载菜单' }}</p>
+      <p class="merchant-card__promo">{{ merchant.description || merchant.remark || '点击进入后将从后端加载菜单' }}</p>
     </div>
   </RouterLink>
 </template>

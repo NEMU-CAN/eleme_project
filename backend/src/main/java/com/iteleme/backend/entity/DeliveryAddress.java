@@ -13,6 +13,6 @@ public class DeliveryAddress {
     private String address;
     private String contactName;
     private String contactTel;
-    private Integer contactSex;
+    private Integer contactGender;
     private Integer isDeleted;
 }
