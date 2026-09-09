@@ -27,4 +27,8 @@ public class FoodVO {
     private Integer businessId;
     /** 备注信息。 */
     private String remark;
+    // ===== [库存 新增] 库存展示（NULL 表示不限；与 Food.stock 同名，BeanUtils 自动拷贝） =====
+    /** 库存（NULL 表示不限）。 */
+    private Integer stock;
+    // ===== [库存 新增结束] =====
 }

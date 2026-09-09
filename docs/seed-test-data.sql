@@ -14,8 +14,8 @@ INSERT INTO `user` (`id`, `password`, `name`, `sex`, `avatar`, `del_flag`) VALUE
 INSERT INTO `business` (`id`, `name`, `address`, `description`, `image`, `order_type_id`, `start_price`, `delivery_price`, `remark`) VALUES
 (10001, '测试商家', '测试地址', '测试介绍', 'data:image/png;base64,iVBORw0KGgo=', 1, 0.00, 0.00, NULL);
 
-INSERT INTO `food` (`id`, `name`, `description`, `image`, `price`, `business_id`, `remark`) VALUES
-(1, '纯肉鲜肉（水饺）', '测试描述', 'data:image/png;base64,iVBORw0KGgo=', 17.50, 10001, NULL);
+INSERT INTO `food` (`id`, `name`, `description`, `image`, `price`, `business_id`, `remark`, `stock`) VALUES
+(1, '纯肉鲜肉（水饺）', '测试描述', 'data:image/png;base64,iVBORw0KGgo=', 17.50, 10001, NULL, 100);
 
 INSERT INTO `deliveryaddress` (`id`, `contact_name`, `contact_sex`, `contact_tel`, `address`, `user_id`) VALUES
 (1, '张三丰', 1, '13800000000', '测试地址1号', '11111111111');
