@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iteleme.backend.mapper.OrderMapper">
+
+    <select id="nextId" resultType="java.lang.Integer">
+        select coalesce(max(`id`), 0) + 1 from `orders`
+    </select>
+
+    <select id="nextDetailId" resultType="java.lang.Integer">
+        select coalesce(max(`id`), 0) + 1 from `order_detail`
+    </select>
+
+    <insert id="insert" parameterType="com.iteleme.backend.entity.Orders">
+        insert into `orders`
+        (`id`, `order_no`, `user_id`, `business_id`, `user_nickname`, `user_phone`, `business_name`, `business_address`, `receiver_name`, `receiver_tel`, `receiver_gender`, `receiver_address`, `order_date`, `delivery_price`, `total_amount`, `actual_amount`, `delivery_address_id`, `order_status`)
+        values
+        (#{id}, #{orderNo}, #{userId}, #{businessId}, #{userNickname}, #{userPhone}, #{businessName}, #{businessAddress}, #{receiverName}, #{receiverTel}, #{receiverGender}, #{receiverAddress}, #{orderDate}, #{deliveryPrice}, #{totalAmount}, #{actualAmount}, #{deliveryAddressId}, #{orderStatus})
+    </insert>
+
+    <select id="findById" resultType="com.iteleme.backend.entity.Orders">
+        select * from `orders` where `id` = #{id} limit 1
+    </select>
+
+    <select id="count" resultType="long">
+        select count(1)
+        from `orders`
+        <where>
+            <if test="role == 0">
+                and `user_id` = #{userId}
+            </if>
+            <if test="businessId != null">
+                and `business_id` = #{businessId}
+            </if>
+            <if test="businessIds != null and businessIds.size() > 0">
+                and `business_id` in
+                <foreach collection="businessIds" item="businessId" open="(" separator="," close=")">
+                    #{businessId}
+                </foreach>
+            </if>
+            <if test="orderStatus != null">
+                and `order_status` = #{orderStatus}
+            </if>
+        </where>
+    </select>
+
+    <select id="list" resultType="com.iteleme.backend.entity.Orders">
+        select *
+        from `orders`
+        <where>
+            <if test="role == 0">
+                and `user_id` = #{userId}
+            </if>
+            <if test="businessId != null">
+                and `business_id` = #{businessId}
+            </if>
+            <if test="businessIds != null and businessIds.size() > 0">
+                and `business_id` in
+                <foreach collection="businessIds" item="businessId" open="(" separator="," close=")">
+                    #{businessId}
+                </foreach>
+            </if>
+            <if test="orderStatus != null">
+                and `order_status` = #{orderStatus}
+            </if>
+        </where>
+        order by `order_date` desc, `id` desc
+        limit #{offset}, #{pageSize}
+    </select>
+
+    <update id="updateStatus">
+        update `orders`
+        set `order_status` = #{orderStatus}
+        where `id` = #{id}
+    </update>
+
+    <update id="updateStatusIfMatch">
+        update `orders`
+        set `order_status` = #{newStatus}
+        where `id` = #{id}
+          and `order_status` = #{oldStatus}
+    </update>
+
+    <insert id="insertDetail" parameterType="com.iteleme.backend.entity.OrderDetail">
+        insert into `order_detail` (`id`, `order_id`, `food_id`, `quantity`, `food_name`, `food_price`, `subtotal`)
+        values (#{id}, #{orderId}, #{foodId}, #{quantity}, #{foodName}, #{foodPrice}, #{subtotal})
+    </insert>
+
+    <select id="details" resultType="com.iteleme.backend.entity.OrderDetail">
+        select * from `order_detail`
+        where `order_id` = #{orderId}
+        order by `id`
+    </select>
+</mapper>

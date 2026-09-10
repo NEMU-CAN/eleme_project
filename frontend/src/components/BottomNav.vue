@@ -10,7 +10,7 @@ const store = useHungryStore()
 const items = computed(() => [
   { label: '首页', icon: 'home', to: '/' },
   { label: '商家', icon: 'compass', to: '/businesses' },
-  { label: '订单', icon: 'orders', to: '/orders', badge: store.unreadOrders.value || undefined },
+  { label: '订单', icon: 'orders', to: '/orders', badge: store.unpaidOrders.value || undefined },
   { label: '我的', icon: 'user', to: '/me' },
 ])
 </script>

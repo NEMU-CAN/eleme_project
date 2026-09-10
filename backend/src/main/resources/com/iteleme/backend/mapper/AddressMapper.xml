@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iteleme.backend.mapper.AddressMapper">
+
+    <select id="list" resultType="com.iteleme.backend.entity.DeliveryAddress">
+        select * from `delivery_address`
+        where `user_id` = #{userId}
+          and `is_deleted` = 0
+        order by `id` desc
+    </select>
+
+    <select id="findById" resultType="com.iteleme.backend.entity.DeliveryAddress">
+        select * from `delivery_address`
+        where `id` = #{id}
+          and `user_id` = #{userId}
+          and `is_deleted` = 0
+        limit 1
+    </select>
+
+    <select id="findByIdAny" resultType="com.iteleme.backend.entity.DeliveryAddress">
+        select * from `delivery_address`
+        where `id` = #{id}
+          and `is_deleted` = 0
+        limit 1
+    </select>
+
+    <select id="nextId" resultType="java.lang.Integer">
+        select coalesce(max(`id`), 0) + 1 from `delivery_address`
+    </select>
+
+    <insert id="insert" parameterType="com.iteleme.backend.entity.DeliveryAddress">
+        insert into `delivery_address` (`id`, `user_id`, `address`, `contact_name`, `contact_tel`, `contact_gender`, `is_deleted`)
+        values (#{id}, #{userId}, #{address}, #{contactName}, #{contactTel}, #{contactGender}, #{isDeleted})
+    </insert>
+
+    <update id="update" parameterType="com.iteleme.backend.entity.DeliveryAddress">
+        update `delivery_address`
+        set `address` = #{address},
+            `contact_name` = #{contactName},
+            `contact_tel` = #{contactTel},
+            `contact_gender` = #{contactGender},
+            `is_deleted` = #{isDeleted}
+        where `id` = #{id}
+          and `user_id` = #{userId}
+    </update>
+
+    <update id="remove">
+        update `delivery_address`
+        set `is_deleted` = 1
+        where `id` = #{id}
+          and `user_id` = #{userId}
+    </update>
+</mapper>

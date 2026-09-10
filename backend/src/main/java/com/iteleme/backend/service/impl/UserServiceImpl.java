@@ -1,156 +1,137 @@
 package com.iteleme.backend.service.impl;
 
-import com.iteleme.backend.common.ServiceValidator;
-import com.iteleme.backend.common.VoConverters;
+import com.iteleme.backend.common.FieldErrorVO;
+import com.iteleme.backend.config.JwtUtil;
+import com.iteleme.backend.constant.UserRole;
+import com.iteleme.backend.context.CurrentUserContext;
+import com.iteleme.backend.dto.UserCreateRequest;
+import com.iteleme.backend.dto.UserUpdateRequest;
 import com.iteleme.backend.entity.User;
-import com.iteleme.backend.exception.ApiException;
+import com.iteleme.backend.exception.ConflictException;
+import com.iteleme.backend.exception.ForbiddenException;
+import com.iteleme.backend.exception.UnauthorizedException;
 import com.iteleme.backend.mapper.UserMapper;
 import com.iteleme.backend.service.UserService;
 import com.iteleme.backend.service.support.TokenInvalidator;
 import com.iteleme.backend.service.support.UserValidator;
-import com.iteleme.backend.vo.LoginVO;
+import com.iteleme.backend.support.TokenHashUtil;
 import com.iteleme.backend.vo.UserVO;
-import com.iteleme.backend.vo.request.LoginRequest;
-import com.iteleme.backend.vo.request.UserCreateRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Objects;
-
-// ===== [阶段① 新增] 注入 JwtUtil 用于生成登录 token =====
-import com.iteleme.backend.config.JwtUtil;
-// ===== [阶段① 新增结束] =====
-
-@Service
 /**
  * 用户业务实现。
  */
+@Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    /** 用户表数据访问对象。 */
     private final UserMapper userMapper;
-    // ===== [阶段① 新增] JWT token 工具 =====
-    private final JwtUtil jwtUtil;
-    // ===== [阶段① 新增结束] =====
-    // ===== [第一步 新增] 协作组件：用户校验 + token 失效 =====
-    /** 用户校验器（纵深防御：确认用户存在且有效）。 */
     private final UserValidator userValidator;
-    /** token 失效器（注销时使旧 token 失效，第二步接入机制）。 */
     private final TokenInvalidator tokenInvalidator;
-    // ===== [第一步 新增结束] =====
 
     /**
-     * 查询用户信息。
+     * 注册新用户。
      */
     @Override
-    public UserVO getUserById(String userId) {
-        ServiceValidator.requireUserId(userId);
-        User user = userMapper.findActiveById(userId);
-        if (user == null) {
-            throw ApiException.notFound();
+    @Transactional
+    public UserVO register(UserCreateRequest request) {
+        if (userMapper.findByPhone(request.phone()) != null) {
+            throw new ConflictException("手机号已存在", java.util.List.of(new FieldErrorVO("phone", "手机号已存在")));
         }
-        return VoConverters.toUserVO(user);
-    }
-
-    /**
-     * 注册用户。
-     */
-    @Override
-    public UserVO createUser(UserCreateRequest request) {
-        validateCreateRequest(request);
-        User existing = userMapper.findById(request.getUserId());
-        if (existing != null && Objects.equals(existing.getDelFlag(), 1)) {
-            throw ApiException.conflict("userId", "用户编号已存在");
-        }
-        // ===== [第一步 新增] 同 userId 重新注册：已删除账号恢复（del_flag=0 → 1） =====
-        if (existing != null) {
-            existing.setPassword(request.getPassword());
-            existing.setName(request.getUserName());
-            existing.setSex(request.getUserSex());
-            existing.setAvatar(request.getUserImg());
-            if (userMapper.reactivate(existing) == 0) {
-                throw ApiException.conflict("userId", "用户状态已发生变化，请重试");
-            }
-            return VoConverters.toUserVO(existing);
-        }
-        // ===== [第一步 新增结束] =====
-
-        User user = new User();
-        user.setId(request.getUserId());
-        user.setPassword(request.getPassword());
-        user.setName(request.getUserName());
-        user.setSex(request.getUserSex());
-        user.setAvatar(request.getUserImg());
-        user.setDelFlag(1);
+        User user = new User(
+                userMapper.nextId(),
+                request.nickname(),
+                request.password(),
+                request.phone(),
+                request.avatar(),
+                request.gender(),
+                UserRole.CUSTOMER,
+                0,
+                null
+        );
         userMapper.insert(user);
-        return VoConverters.toUserVO(user);
+        return UserVO.from(user);
     }
 
     /**
-     * 用户登录。
+     * 登录：校验手机号/密码，签发 token 并写入单会话哈希。
      */
     @Override
-    public LoginVO login(LoginRequest request) {
-        if (request == null) {
-            throw ApiException.badRequest("body", "请求体不能为空");
+    @Transactional
+    public UserVO login(String phone, String password) {
+        User user = userMapper.findByPhone(phone);
+        if (user == null || !password.equals(user.getPassword())) {
+            throw new UnauthorizedException("手机号或密码错误");
         }
-        ServiceValidator.requireUserId(request.getUserId());
-        ServiceValidator.requireNonBlank(request.getPassword(), "password");
-        ServiceValidator.requireMaxLength(request.getPassword(), "password", 20);
-
-        User user = userMapper.findById(request.getUserId());
-        if (user == null || !Objects.equals(user.getDelFlag(), 1)) {
-            throw ApiException.notFound();
+        if (user.getStatus() != 0) {
+            throw new ForbiddenException("账号已禁用");
         }
-        if (!Objects.equals(user.getPassword(), request.getPassword())) {
-            throw ApiException.unauthorized();
-        }
-        // ===== [阶段① 新增] 登录成功生成 token =====
-        String token = jwtUtil.generateToken(user.getId());
-        // ===== [第二步 新增] 单会话：写入当前 token 哈希（新登录覆盖旧值 → 旧设备 token 立即失效） =====
-        userMapper.updateCurrentTokenHash(user.getId(), jwtUtil.hashToken(token));
-        // ===== [第二步 新增结束] =====
-        return new LoginVO(token, VoConverters.toUserVO(user));
-        // ===== [阶段① 新增结束] =====
+        String token = JwtUtil.create(user.getId(), user.getRole());
+        user.setCurrentTokenHash(TokenHashUtil.hash(token));
+        userMapper.update(user);
+        return UserVO.from(user).withToken(token);
     }
 
-    // ===== [第一步 新增] 退出登录（注销会话） =====
     /**
-     * 退出登录：结束当前用户的登录会话。
+     * 查询当前登录用户资料。
      */
     @Override
-    public void logout(String userId) {
-        userValidator.requireActive(userId);
-        tokenInvalidator.invalidate(userId);
+    public UserVO current() {
+        return UserVO.from(loadCurrentUser());
     }
-    // ===== [第一步 新增结束] =====
 
-    // ===== [第一步 新增] 删除账户（软删，del_flag=0） =====
     /**
-     * 删除账户：软删（del_flag=0）。该用户所有 token 立即失效
-     * （拦截器按 del_flag 校验；markAsDeleted 同时清空 token 哈希，防重注册后旧 token 复活）。
+     * 更新当前用户资料；资料变更后清空 token 哈希，要求客户端重新登录。
      */
     @Override
-    public void deleteAccount(String userId) {
-        userValidator.requireActive(userId);
-        if (userMapper.markAsDeleted(userId) == 0) {
-            throw ApiException.conflict("userId", "用户状态已发生变化，请重试");
+    @Transactional
+    public UserVO update(UserUpdateRequest request) {
+        User user = loadCurrentUser();
+        if (request.phone() != null && !request.phone().equals(user.getPhone())) {
+            User exist = userMapper.findByPhone(request.phone());
+            if (exist != null && !exist.getId().equals(user.getId())) {
+                throw new ConflictException("手机号已存在", java.util.List.of(new FieldErrorVO("phone", "手机号已存在")));
+            }
+            user.setPhone(request.phone());
         }
+        if (request.nickname() != null) {
+            user.setNickname(request.nickname());
+        }
+        if (request.avatar() != null) {
+            user.setAvatar(request.avatar());
+        }
+        if (request.gender() != null) {
+            user.setGender(request.gender());
+        }
+        user.setCurrentTokenHash(null);
+        userMapper.update(user);
+        return UserVO.from(user);
     }
-    // ===== [第一步 新增结束] =====
 
     /**
-     * 校验注册请求体。
+     * 退出登录：结束当前用户会话，使 token 失效。
      */
-    private void validateCreateRequest(UserCreateRequest request) {
-        if (request == null) {
-            throw ApiException.badRequest("body", "请求体不能为空");
-        }
-        ServiceValidator.requireUserId(request.getUserId());
-        ServiceValidator.requireNonBlank(request.getPassword(), "password");
-        ServiceValidator.requireMaxLength(request.getPassword(), "password", 20);
-        ServiceValidator.requireNonBlank(request.getUserName(), "userName");
-        ServiceValidator.requireMaxLength(request.getUserName(), "userName", 20);
-        ServiceValidator.requireZeroOrOne(request.getUserSex(), "userSex");
+    @Override
+    @Transactional
+    public void logout() {
+        User user = loadCurrentUser();
+        tokenInvalidator.invalidate(user.getId());
+    }
+
+    /**
+     * 删除账户（软删）：status 置为 -1，清空 token，所有会话立即失效。
+     */
+    @Override
+    @Transactional
+    public void deleteAccount() {
+        User user = loadCurrentUser();
+        user.setStatus(-1);
+        user.setCurrentTokenHash(null);
+        userMapper.update(user);
+    }
+
+    private User loadCurrentUser() {
+        return userValidator.requireActive(CurrentUserContext.userId());
     }
 }

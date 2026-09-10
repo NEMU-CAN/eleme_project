@@ -1,11 +1,15 @@
 package com.iteleme.backend.common;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 统一接口响应体。
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Result {
 
     /** 业务状态码，1 表示成功，其余值表示不同的失败或异常类型。 */
@@ -21,21 +25,17 @@ public class Result {
      * @return 成功响应
      */
     public static Result success() {
-        return success(null);
+        return new Result(1, "success", null);
     }
 
     /**
      * 创建成功响应，并携带业务数据。
      *
-     * @param object 业务数据
+     * @param data 业务数据
      * @return 成功响应
      */
-    public static Result success(Object object) {
-        Result result = new Result();
-        result.code = 1;
-        result.msg = "success";
-        result.data = object;
-        return result;
+    public static Result success(Object data) {
+        return new Result(1, "success", data);
     }
 
     /**
@@ -45,7 +45,7 @@ public class Result {
      * @return 失败响应
      */
     public static Result error(String msg) {
-        return error(0, msg, null);
+        return new Result(0, msg, null);
     }
 
     /**
@@ -56,7 +56,7 @@ public class Result {
      * @return 失败响应
      */
     public static Result error(Integer code, String msg) {
-        return error(code, msg, null);
+        return new Result(code, msg, null);
     }
 
     /**
@@ -64,14 +64,10 @@ public class Result {
      *
      * @param code 业务码
      * @param msg 错误提示
-     * @param object 附加数据
+     * @param data 附加数据
      * @return 失败响应
      */
-    public static Result error(Integer code, String msg, Object object) {
-        Result result = new Result();
-        result.code = code;
-        result.msg = msg;
-        result.data = object;
-        return result;
+    public static Result error(Integer code, String msg, Object data) {
+        return new Result(code, msg, data);
     }
 }

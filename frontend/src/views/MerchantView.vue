@@ -5,19 +5,16 @@ import QuantityStepper from '@/components/QuantityStepper.vue'
 import SiteHeader from '@/components/SiteHeader.vue'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
-import { formatCny } from '@/utils/format'
+import { formatBusinessStatus, formatCny } from '@/utils/format'
 
 const router = useRouter()
 const route = useRoute()
 const store = useHungryStore()
 const error = ref('')
 
-// 路由里的商家 id 作为当前详情页主键，没有时回退到当前选中的商家。
 const merchantId = computed(() => String(route.params.merchantId || store.activeMerchant.value?.id || ''))
-
-// 当前详情页正在展示的商家。
 const merchant = computed(() => store.getMerchant(merchantId.value) ?? null)
-// 当前商家的购物车汇总，用于页面底部购物车条。
+const menuItems = computed(() => merchant.value?.menuSections.flatMap((section) => section.items) ?? [])
 const cartSummary = computed(() => (merchant.value ? store.checkoutSummary(merchant.value.id) : {
   merchant: null,
   lines: [],
@@ -26,13 +23,42 @@ const cartSummary = computed(() => (merchant.value ? store.checkoutSummary(merch
   total: 0,
   count: 0,
 }))
-// 判断是否已满足起送门槛。
 const canCheckout = computed(() => (merchant.value ? store.cartCanCheckout(merchant.value.id) : false))
-// 还差多少金额才能起送。
 const remaining = computed(() => Math.max(0, (merchant.value?.minOrder ?? 0) - cartSummary.value.subtotal))
 const isBusy = computed(() => store.state.loading.merchant || store.state.loading.action)
+const merchantStatusText = computed(() => merchant.value ? formatBusinessStatus(merchant.value.status) : '营业信息')
+const merchantStatusClass = computed(() => {
+  if (!merchant.value) {
+    return 'status-pill'
+  }
+
+  if (merchant.value.status === 'open') {
+    return 'status-pill status-pill--success'
+  }
+
+  if (merchant.value.status === 'closed') {
+    return 'status-pill status-pill--warning'
+  }
+
+  return 'status-pill status-pill--danger'
+})
+const cartHint = computed(() => {
+  if (!cartSummary.value.count) {
+    return '先挑选一些商品，再进入结算。'
+  }
+
+  if (!store.isAuthenticated.value) {
+    return '登录后可以继续结算并同步地址。'
+  }
+
+  if (!canCheckout.value) {
+    return `还差 ${formatCny(remaining.value)} 才能起送。`
+  }
+
+  return `已满足起送，配送费 ${formatCny(merchant.value?.deliveryFee ?? 0)}。`
+})
 const checkoutLabel = computed(() => {
-  if (!store.state.user) {
+  if (!store.isAuthenticated.value) {
     return '登录后下单'
   }
 
@@ -43,36 +69,74 @@ const checkoutLabel = computed(() => {
   return '去结算'
 })
 
-// 进入页面时同步当前商家，保证全局状态和地址栏一致。
 watch(
   merchantId,
   async (value) => {
-    if (value) {
-      error.value = ''
-      try {
-        await store.ensureMerchantDetail(value)
-      } catch (cause) {
-        error.value = store.messageFromError(cause)
-      }
+    if (!value) {
+      return
+    }
+
+    error.value = ''
+    try {
+      await store.ensureMerchantDetail(value)
+    } catch (cause) {
+      error.value = store.messageFromError(cause)
     }
   },
   { immediate: true },
 )
 
-// 读取某个商品在购物车里的数量。
 function quantityFor(itemId: string) {
   return cartSummary.value.lines.find((line) => line.id === itemId)?.quantity || 0
 }
 
-// 给指定商品加一份到购物车。
+function availableStockFor(itemId: string) {
+  return menuItems.value.find((item) => item.id === itemId)?.stock ?? 0
+}
+
+function canAddItem(itemId: string) {
+  const item = menuItems.value.find((entry) => entry.id === itemId)
+  if (!merchant.value || !item) {
+    return false
+  }
+
+  if (merchant.value.status !== 'open' || item.status !== 'online') {
+    return false
+  }
+
+  return quantityFor(item.id) < availableStockFor(item.id)
+}
+
+function stockLabel(itemId: string) {
+  const item = menuItems.value.find((entry) => entry.id === itemId)
+  if (!item) {
+    return ''
+  }
+
+  if (item.status !== 'online') {
+    return '已下架'
+  }
+
+  const available = availableStockFor(itemId)
+  if (available <= 0) {
+    return '已售罄'
+  }
+
+  if (available <= 3) {
+    return `仅剩 ${available} 份`
+  }
+
+  return `剩余 ${available} 份`
+}
+
 async function addItem(itemId: string) {
-  if (!store.state.user) {
+  if (!store.isAuthenticated.value) {
     router.push({ path: '/login', query: { redirect: route.fullPath } })
     return
   }
 
-  const item = merchant.value?.menuSections.flatMap((section) => section.items).find((entry) => entry.id === itemId)
-  if (item) {
+  const item = menuItems.value.find((entry) => entry.id === itemId)
+  if (item && canAddItem(item.id)) {
     try {
       error.value = ''
       await store.addToCart(item.businessId, item)
@@ -82,7 +146,6 @@ async function addItem(itemId: string) {
   }
 }
 
-// 从购物车里减去一份指定商品。
 async function removeItem(itemId: string) {
   if (!merchant.value) {
     return
@@ -96,13 +159,12 @@ async function removeItem(itemId: string) {
   }
 }
 
-// 生成待结算订单并跳转到确认页。
 async function checkout() {
   if (!merchant.value) {
     return
   }
 
-  if (!store.state.user) {
+  if (!store.isAuthenticated.value) {
     router.push({ path: '/login', query: { redirect: route.fullPath } })
     return
   }
@@ -120,7 +182,6 @@ async function checkout() {
   }
 }
 
-// 返回商家列表页。
 function goBack() {
   router.push('/businesses')
 }
@@ -128,32 +189,39 @@ function goBack() {
 
 <template>
   <div class="page">
-    <!-- 页面头部：商家名称和返回按钮。 -->
     <SiteHeader :title="merchant?.name || '商家信息'" eyebrow="商家信息" backable @back="goBack" />
 
     <template v-if="merchant">
-      <!-- 头图：突出商家主视觉和卖点。 -->
       <section class="detail-hero">
         <div class="detail-cover">
           <img class="detail-cover__image" :src="merchant.image" :alt="merchant.name" />
           <div class="detail-cover__overlay" />
           <div class="detail-cover__content">
+            <div class="chip-row detail-cover__chips">
+              <span class="status-pill" :class="merchantStatusClass.replace('status-pill ', '')">
+                <UiIcon name="check" :size="14" />
+                {{ merchantStatusText }}
+              </span>
+              <span class="status-pill">
+                <UiIcon name="filter" :size="14" />
+                {{ merchant.tasteName }}
+              </span>
+            </div>
             <h2 class="detail-cover__title">{{ merchant.description || merchant.name }}</h2>
             <p class="detail-cover__text">{{ merchant.address || '商家暂未填写地址' }}</p>
           </div>
         </div>
       </section>
 
-      <!-- 基础数据：后端返回的起送、配送和分类信息。 -->
       <section class="detail-stats">
         <div class="detail-stats__row">
           <article class="detail-stat">
             <p class="detail-stat__label">起送费</p>
-            <p class="detail-stat__value">{{ formatCny(merchant.minOrder) }}</p>
+            <p class="detail-stat__value">{{ formatCny(merchant.minOrder ?? 0) }}</p>
           </article>
           <article class="detail-stat">
             <p class="detail-stat__label">配送费</p>
-            <p class="detail-stat__value">{{ formatCny(merchant.deliveryFee) }}</p>
+            <p class="detail-stat__value">{{ formatCny(merchant.deliveryFee ?? 0) }}</p>
           </article>
         </div>
         <div class="detail-stats__row">
@@ -168,7 +236,6 @@ function goBack() {
         </div>
       </section>
 
-      <!-- 商家信息卡：后端详情、起送门槛和说明。 -->
       <section class="page__content">
         <div class="info-card panel">
           <div class="info-card__header">
@@ -176,32 +243,34 @@ function goBack() {
               <p class="eyebrow">营业信息</p>
               <h3 class="info-card__title">{{ merchant.name }}</h3>
             </div>
-            <span class="status-pill">
+            <span :class="merchantStatusClass">
               <UiIcon name="check" :size="14" />
-              可下单
+              {{ merchantStatusText }}
             </span>
           </div>
           <p class="info-card__text">
-            满 {{ formatCny(merchant.minOrder) }} 起送，配送费 {{ formatCny(merchant.deliveryFee) }}。
+            满 {{ formatCny(merchant.minOrder ?? 0) }} 起送，配送费 {{ formatCny(merchant.deliveryFee ?? 0) }}。
             {{ merchant.remark || merchant.description || '详情来自后端商家接口。' }}
           </p>
           <p v-if="error" class="field__hint" style="color: var(--danger)">{{ error }}</p>
           <div class="chip-row">
             <span class="chip">分类 {{ merchant.orderTypeId }}</span>
+            <span class="chip">{{ merchant.tasteName }}</span>
             <span v-if="merchant.address" class="chip">{{ merchant.address }}</span>
           </div>
         </div>
       </section>
 
-      <!-- 菜单区：每个商品都支持加减数量。 -->
       <section v-if="merchant.menuSections.length" class="menu-board">
         <div v-for="section in merchant.menuSections" :key="section.id" class="menu-section">
           <h3 class="menu-section__heading">{{ section.title }}</h3>
           <article v-for="item in section.items" :key="item.id" class="menu-item panel">
             <img class="menu-item__image" :src="item.image" :alt="item.name" />
             <div>
-              <div class="chip-row" style="margin-bottom: 8px">
-                <span v-if="item.remark" class="status-pill status-pill--warning">{{ item.remark }}</span>
+              <div class="menu-item__badges chip-row">
+                <span :class="item.status === 'online' && availableStockFor(item.id) > 0 ? 'status-pill status-pill--success' : 'status-pill status-pill--warning'">
+                  {{ stockLabel(item.id) }}
+                </span>
               </div>
               <h4 class="menu-item__title">{{ item.name }}</h4>
               <p class="menu-item__text">{{ item.description || '暂无商品介绍' }}</p>
@@ -210,6 +279,7 @@ function goBack() {
                 <QuantityStepper
                   :quantity="quantityFor(item.id)"
                   :disabled="store.state.loading.action"
+                  :can-add="canAddItem(item.id)"
                   @add="addItem(item.id)"
                   @remove="removeItem(item.id)"
                 />
@@ -226,7 +296,6 @@ function goBack() {
         </div>
       </section>
 
-      <!-- 底部购物车条：显示当前小计并提供去结算入口。 -->
       <div class="cart-bar">
         <div class="cart-bar__summary">
           <div class="cart-bar__icon">
@@ -235,15 +304,13 @@ function goBack() {
           </div>
           <div>
             <p class="cart-bar__title">{{ formatCny(cartSummary.subtotal) }}</p>
-            <p class="cart-bar__text">
-              {{ canCheckout ? `已满足起送，配送费 ${formatCny(merchant.deliveryFee)}` : `还差 ${formatCny(remaining)} 起送` }}
-            </p>
+            <p class="cart-bar__text">{{ cartHint }}</p>
           </div>
         </div>
         <button
           type="button"
           class="primary-button cart-bar__action"
-          :disabled="isBusy || !cartSummary.count || (!!store.state.user && !canCheckout)"
+          :disabled="isBusy || !cartSummary.count || (store.isAuthenticated.value && !canCheckout)"
           @click="checkout"
         >
           {{ isBusy ? '处理中' : checkoutLabel }}

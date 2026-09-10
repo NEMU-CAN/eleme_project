@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iteleme.backend.mapper.BusinessMapper">
+
+    <select id="list" resultType="com.iteleme.backend.entity.Business">
+        select * from `business`
+        <where>
+            <if test="status != null">
+                and `status` = #{status}
+            </if>
+            <if test="status == null">
+                and `status` &lt;&gt; -1
+            </if>
+            <if test="tasteId != null">
+                and `taste_id` = #{tasteId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                and (
+                    `name` like concat('%', #{keyword}, '%')
+                    or `address` like concat('%', #{keyword}, '%')
+                    or `description` like concat('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        order by `id` desc
+    </select>
+
+    <select id="findById" resultType="com.iteleme.backend.entity.Business">
+        select * from `business` where `id` = #{id} limit 1
+    </select>
+
+    <select id="nextId" resultType="java.lang.Integer">
+        select coalesce(max(`id`), 0) + 1 from `business`
+    </select>
+
+    <insert id="insert" parameterType="com.iteleme.backend.entity.Business">
+        insert into `business` (`id`, `name`, `address`, `description`, `image`, `taste_id`, `start_price`, `delivery_price`, `status`)
+        values (#{id}, #{name}, #{address}, #{description}, #{image}, #{tasteId}, #{startPrice}, #{deliveryPrice}, #{status})
+    </insert>
+
+    <update id="update" parameterType="com.iteleme.backend.entity.Business">
+        update `business`
+        set `name` = #{name},
+            `address` = #{address},
+            `description` = #{description},
+            `image` = #{image},
+            `taste_id` = #{tasteId},
+            `start_price` = #{startPrice},
+            `delivery_price` = #{deliveryPrice},
+            `status` = #{status}
+        where `id` = #{id}
+    </update>
+
+    <update id="updateStatus">
+        update `business`
+        set `status` = #{status}
+        where `id` = #{id}
+    </update>
+</mapper>

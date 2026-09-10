@@ -10,10 +10,11 @@ import { useHungryStore } from '@/composables/useHungryStore'
 
 const router = useRouter()
 const store = useHungryStore()
+const categoryItems = computed(() => (store.tasteCategories.value.length ? store.tasteCategories.value : categories))
 
 onMounted(() => {
   void store.loadBusinesses().catch(() => undefined)
-  if (store.state.user) {
+  if (store.isAuthenticated.value) {
     void store.loadSessionData().catch(() => undefined)
   }
 })
@@ -27,7 +28,7 @@ const heroAddress = computed(() => {
     return store.activeAddress.value.detail
   }
 
-  return store.state.user ? '请选择收货地址' : '登录后同步收货地址'
+  return store.isAuthenticated.value ? '请选择收货地址' : '登录后同步收货地址'
 })
 
 // 跳转到商家列表页，承接首页搜索和分类入口。
@@ -71,8 +72,8 @@ function goBusinesses() {
     </section>
 
     <div class="page__content">
-      <!-- 分类入口：把前端入口映射到后端 orderTypeId。 -->
-      <CategoryGrid :items="categories" />
+      <!-- 分类入口：优先使用后端口味列表，没有数据时回退静态资源。 -->
+      <CategoryGrid :items="categoryItems" />
 
       <!-- 推荐活动：使用后端返回的当前商家信息。 -->
       <section v-if="featuredMerchant" class="section">

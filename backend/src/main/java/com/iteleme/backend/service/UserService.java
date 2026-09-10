@@ -1,24 +1,19 @@
 package com.iteleme.backend.service;
 
-import com.iteleme.backend.vo.LoginVO;
+import com.iteleme.backend.dto.UserCreateRequest;
+import com.iteleme.backend.dto.UserUpdateRequest;
 import com.iteleme.backend.vo.UserVO;
-import com.iteleme.backend.vo.request.LoginRequest;
-import com.iteleme.backend.vo.request.UserCreateRequest;
 
 public interface UserService {
-    UserVO getUserById(String userId);
+    UserVO register(UserCreateRequest request);
 
-    UserVO createUser(UserCreateRequest request);
+    UserVO login(String phone, String password);
 
-    // ===== [阶段① 新增] 登录返回 token + 用户信息 =====
-    LoginVO login(LoginRequest request);
-    // ===== [阶段① 新增结束] =====
+    UserVO current();
 
-    // ===== [第一步 新增] 退出登录（注销会话） =====
-    void logout(String userId);
-    // ===== [第一步 新增结束] =====
+    UserVO update(UserUpdateRequest request);
 
-    // ===== [第一步 新增] 删除账户（软删，del_flag=0） =====
-    void deleteAccount(String userId);
-    // ===== [第一步 新增结束] =====
+    void logout();
+
+    void deleteAccount();
 }

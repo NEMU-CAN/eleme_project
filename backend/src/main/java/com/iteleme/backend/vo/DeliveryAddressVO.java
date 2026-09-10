@@ -1,26 +1,23 @@
 package com.iteleme.backend.vo;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.iteleme.backend.entity.DeliveryAddress;
 
-/**
- * 送货地址展示对象。
- */
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class DeliveryAddressVO {
-    /** 送货地址编号。 */
-    private Integer id;
-    /** 联系人姓名。 */
-    private String contactName;
-    /** 联系人性别。 */
-    private Integer contactSex;
-    /** 联系人电话。 */
-    private String contactTel;
-    /** 详细送货地址。 */
-    private String address;
-    /** 所属用户编号。 */
-    private String userId;
+public record DeliveryAddressVO(
+        Integer id,
+        Integer userId,
+        String address,
+        String contactName,
+        String contactTel,
+        Integer contactGender
+) {
+    public static DeliveryAddressVO from(DeliveryAddress address) {
+        return new DeliveryAddressVO(
+                address.getId(),
+                address.getUserId(),
+                address.getAddress(),
+                address.getContactName(),
+                address.getContactTel(),
+                address.getContactGender()
+        );
+    }
 }

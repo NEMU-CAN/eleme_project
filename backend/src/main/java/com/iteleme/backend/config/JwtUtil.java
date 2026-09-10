@@ -1,106 +1,76 @@
 package com.iteleme.backend.config;
 
-// ============================================================
-// [阶段① 新增] JWT 工具：生成 / 解析签名 token（HS256，无额外依赖）
-// 说明：用 JDK 自带 crypto + tools.jackson 拼标准 JWT（header.payload.signature）。
-//       阶段②③ 收紧鉴权时可复用；如需换第三方 JWT 库，仅改本类。
-// ============================================================
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
+import com.iteleme.backend.context.LoginUser;
+import lombok.SneakyThrows;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-@Component
-public class JwtUtil {
+public final class JwtUtil {
+    private static final String KEY = "eleme-backend-secret";
+    private static final Pattern SUB_PATTERN = Pattern.compile("\"sub\"\\s*:\\s*\"?(\\d+)\"?");
+    private static final Pattern ROLE_PATTERN = Pattern.compile("\"role\"\\s*:\\s*(-?\\d+)");
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final String HEADER_JSON = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
-
-    private final SecretKeySpec key;
-    private final long expireMillis;
-
-    public JwtUtil(@Value("${app.jwt.secret:codex-workS-eleme-secret}") String secret,
-                   @Value("${app.jwt.expire-hours:24}") long expireHours) {
-        this.key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        this.expireMillis = expireHours * 3600L * 1000L;
+    private JwtUtil() {
     }
 
-    /** 为指定用户生成签名 token。 */
-    public String generateToken(String userId) {
-        try {
-            long now = System.currentTimeMillis();
-            ObjectNode payload = MAPPER.createObjectNode();
-            payload.put("sub", userId);
-            payload.put("iat", now / 1000L);
-            payload.put("exp", (now + expireMillis) / 1000L);
-            // ===== [第二步 新增] jti：每次登录生成唯一 token（同秒内多次登录也互不相同，单会话哈希校验才可靠） =====
-            payload.put("jti", UUID.randomUUID().toString());
-            // ===== [第二步 新增结束] =====
-            String body = base64Url(HEADER_JSON) + "." + base64Url(MAPPER.writeValueAsString(payload));
-            return body + "." + base64Url(sign(body));
-        } catch (Exception e) {
-            throw new IllegalStateException("生成 token 失败", e);
-        }
+    public static String create(Integer userId) {
+        return create(userId, 0);
     }
 
-    /** 解析 token 中的用户编号；无效 / 过期返回 null。 */
-    public String parseUserId(String token) {
-        if (token == null || token.isBlank()) {
-            return null;
-        }
+    public static String create(Integer userId, Integer role) {
+        String header = encode("{\"alg\":\"HS256\",\"typ\":\"JWT\"}");
+        String payload = encode("{\"sub\":\"" + userId + "\",\"role\":" + role + ",\"iat\":" + Instant.now().getEpochSecond() + ",\"jti\":\"" + UUID.randomUUID().toString().replace("-", "") + "\"}");
+        return header + "." + payload + "." + sign(header + "." + payload);
+    }
+
+    public static Integer id(String token) {
+        return parse(token).userId();
+    }
+
+    public static LoginUser parse(String token) {
         try {
             String[] parts = token.split("\\.");
             if (parts.length != 3) {
-                return null;
+                throw new SecurityException("令牌格式错误");
             }
-            String body = parts[0] + "." + parts[1];
-            String expected = base64Url(sign(body));
-            if (!MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8),
-                    parts[2].getBytes(StandardCharsets.UTF_8))) {
-                return null;
+            String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+            Integer userId = extractInt(payload, SUB_PATTERN);
+            if (userId == null) {
+                throw new SecurityException("无效令牌");
             }
-            ObjectNode payload = (ObjectNode) MAPPER.readTree(
-                    new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8));
-            long exp = payload.path("exp").asLong();
-            if (exp > 0 && exp * 1000L < System.currentTimeMillis()) {
-                return null;
+            Integer role = extractInt(payload, ROLE_PATTERN);
+            if (role == null) {
+                role = 0;
             }
-            return payload.path("sub").asText(null);
+            return new LoginUser(userId, role, token);
         } catch (Exception e) {
-            return null;
+            throw new SecurityException("无效令牌", e);
         }
     }
 
-    // ===== [第二步 新增] token 哈希：单会话校验用（登录写入 user.current_token_hash，注销/删除清空） =====
-    /** 计算 token 的哈希（SHA-256 → base64url）。 */
-    public String hashToken(String token) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return base64Url(digest.digest(token.getBytes(StandardCharsets.UTF_8)));
-        } catch (Exception e) {
-            throw new IllegalStateException("计算 token 哈希失败", e);
-        }
+    private static String encode(String value) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }
-    // ===== [第二步 新增结束] =====
 
-    private byte[] sign(String body) throws Exception {
+    @SneakyThrows
+    private static String sign(String content) {
         Mac mac = Mac.getInstance("HmacSHA256");
-        mac.init(key);
-        return mac.doFinal(body.getBytes(StandardCharsets.UTF_8));
+        mac.init(new SecretKeySpec(KEY.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(content.getBytes(StandardCharsets.UTF_8)));
     }
 
-    private static String base64Url(String s) {
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(s.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private static String base64Url(byte[] b) {
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(b);
+    private static Integer extractInt(String payload, Pattern pattern) {
+        Matcher matcher = pattern.matcher(payload);
+        if (matcher.find()) {
+            return Integer.valueOf(matcher.group(1));
+        }
+        return null;
     }
 }

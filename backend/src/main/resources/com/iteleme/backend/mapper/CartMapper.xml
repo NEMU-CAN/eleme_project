@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iteleme.backend.mapper.CartMapper">
+
+    <select id="list" resultType="com.iteleme.backend.entity.Cart">
+        select * from `cart`
+        <where>
+            <if test="userId != null">
+                and `user_id` = #{userId}
+            </if>
+            <if test="businessId != null">
+                and `business_id` = #{businessId}
+            </if>
+        </where>
+        order by `id` desc
+    </select>
+
+    <select id="findByUserAndFood" resultType="com.iteleme.backend.entity.Cart">
+        select * from `cart`
+        where `user_id` = #{userId}
+          and `food_id` = #{foodId}
+        limit 1
+    </select>
+
+    <select id="nextId" resultType="java.lang.Integer">
+        select coalesce(max(`id`), 0) + 1 from `cart`
+    </select>
+
+    <insert id="insert" parameterType="com.iteleme.backend.entity.Cart">
+        insert into `cart` (`id`, `user_id`, `business_id`, `food_id`, `quantity`)
+        values (#{id}, #{userId}, #{businessId}, #{foodId}, #{quantity})
+    </insert>
+
+    <update id="updateQuantity">
+        update `cart`
+        set `quantity` = #{quantity}
+        where `user_id` = #{userId}
+          and `food_id` = #{foodId}
+    </update>
+
+    <delete id="deleteByUserAndFood">
+        delete from `cart`
+        where `user_id` = #{userId}
+          and `food_id` = #{foodId}
+    </delete>
+
+    <delete id="clearByUser">
+        delete from `cart`
+        where `user_id` = #{userId}
+    </delete>
+
+    <delete id="clearByUserAndBusiness">
+        delete from `cart`
+        where `user_id` = #{userId}
+          and `business_id` = #{businessId}
+    </delete>
+</mapper>

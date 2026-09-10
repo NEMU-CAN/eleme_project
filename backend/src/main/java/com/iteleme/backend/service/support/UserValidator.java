@@ -1,27 +1,34 @@
 package com.iteleme.backend.service.support;
 
-import com.iteleme.backend.common.ServiceValidator;
-import com.iteleme.backend.exception.ApiException;
+import com.iteleme.backend.entity.User;
+import com.iteleme.backend.exception.ForbiddenException;
+import com.iteleme.backend.exception.NotFoundException;
 import com.iteleme.backend.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-// ============================================================
-// [重构] 用户校验器：收拢"用户存在且处于正常状态"的校验（纵深防御）
-// ============================================================
+/**
+ * 用户校验器：收拢"用户存在且处于正常状态"的校验（纵深防御）。
+ */
 @Component
 @RequiredArgsConstructor
 public class UserValidator {
-    /** 用户表数据访问对象。 */
     private final UserMapper userMapper;
 
     /**
-     * 确认用户存在且处于正常状态（del_flag = 1），否则抛 404。
+     * 确认用户存在且处于正常状态（status = 0），否则抛异常。
+     *
+     * @param userId 用户编号
+     * @return 有效用户
      */
-    public void requireActive(String userId) {
-        ServiceValidator.requireUserId(userId);
-        if (userMapper.findActiveById(userId) == null) {
-            throw ApiException.notFound();
+    public User requireActive(Integer userId) {
+        User user = userMapper.findById(userId);
+        if (user == null) {
+            throw new NotFoundException("用户不存在");
         }
+        if (user.getStatus() != 0) {
+            throw new ForbiddenException("账号已禁用");
+        }
+        return user;
     }
 }

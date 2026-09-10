@@ -168,6 +168,10 @@ button {
   gap: 10px;
 }
 
+.chip-row--center {
+  justify-content: center;
+}
+
 .chip {
   min-height: 34px;
   padding: 0 12px;
@@ -277,6 +281,11 @@ button {
   color: var(--accent);
 }
 
+.status-pill--danger {
+  background: rgba(225, 75, 75, 0.12);
+  color: var(--danger);
+}
+
 .empty-state {
   padding: 28px 18px;
   text-align: center;
@@ -331,6 +340,14 @@ button {
 .field__hint {
   font-size: 12px;
   color: var(--muted);
+}
+
+.field__hint--danger {
+  color: var(--danger);
+}
+
+.field__hint--success {
+  color: var(--success);
 }
 
 .form-stack {
@@ -1083,6 +1100,11 @@ button {
   text-align: left;
 }
 
+.timeline-item--active {
+  background: rgba(14, 109, 229, 0.08);
+  border: 1px solid rgba(14, 109, 229, 0.18);
+}
+
 .timeline-item__top {
   display: flex;
   align-items: center;
@@ -1121,6 +1143,16 @@ button {
   background: rgba(255, 255, 255, 0.82);
   border-radius: 16px;
   border: 1px solid rgba(21, 32, 51, 0.06);
+}
+
+.tabs--scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs--scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-button {
@@ -1233,6 +1265,105 @@ button {
 
 .order-summary__total strong {
   color: var(--text);
+}
+
+.order-card {
+  gap: 14px;
+}
+
+.order-card__header {
+  align-items: center;
+}
+
+.order-card__image {
+  border-radius: 16px;
+  object-fit: cover;
+  flex: none;
+}
+
+.order-card__total {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.order-card__footer {
+  align-items: center;
+}
+
+.payment-method {
+  cursor: pointer;
+  border: 1px solid rgba(21, 32, 51, 0.06);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.payment-method:hover {
+  transform: translateY(-1px);
+}
+
+.payment-method--active {
+  background: #fff;
+  border-color: rgba(14, 109, 229, 0.22);
+  box-shadow: 0 12px 24px rgba(14, 109, 229, 0.08);
+}
+
+.payment-method__content {
+  align-items: center;
+}
+
+.payment-summary {
+  cursor: pointer;
+}
+
+.checkout-address {
+  padding: 12px;
+}
+
+.checkout-action {
+  width: 100%;
+}
+
+.profile-hero {
+  gap: 14px;
+}
+
+.profile-hero__body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.profile-hero__avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow: 0 12px 24px rgba(6, 16, 30, 0.16);
+}
+
+.profile-hero__copy {
+  min-width: 0;
+}
+
+.profile-form {
+  margin-top: 4px;
+}
+
+.profile-actions {
+  margin-top: 2px;
+}
+
+.session-banner {
+  gap: 12px;
+}
+
+.detail-cover__chips {
+  margin-bottom: 12px;
+}
+
+.menu-item__badges {
+  margin-bottom: 8px;
 }
 
 .fade-enter-active,

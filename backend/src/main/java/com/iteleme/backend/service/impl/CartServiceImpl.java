@@ -1,150 +1,147 @@
 package com.iteleme.backend.service.impl;
 
-import com.iteleme.backend.common.ServiceValidator;
-import com.iteleme.backend.common.VoConverters;
+import com.iteleme.backend.constant.BusinessStatus;
+import com.iteleme.backend.constant.FoodStatus;
+import com.iteleme.backend.constant.UserRole;
+import com.iteleme.backend.context.CurrentUserContext;
+import com.iteleme.backend.dto.CartItemSaveRequest;
+import com.iteleme.backend.dto.CartItemUpdateRequest;
 import com.iteleme.backend.entity.Business;
 import com.iteleme.backend.entity.Cart;
 import com.iteleme.backend.entity.Food;
-import com.iteleme.backend.exception.ApiException;
+import com.iteleme.backend.exception.BadRequestException;
+import com.iteleme.backend.exception.NotFoundException;
+import com.iteleme.backend.exception.ForbiddenException;
 import com.iteleme.backend.mapper.BusinessMapper;
 import com.iteleme.backend.mapper.CartMapper;
 import com.iteleme.backend.mapper.FoodMapper;
 import com.iteleme.backend.service.CartService;
-import com.iteleme.backend.service.support.UserValidator;
 import com.iteleme.backend.vo.CartItemVO;
-import com.iteleme.backend.vo.request.CartCreateRequest;
-import com.iteleme.backend.vo.request.CartUpdateRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
-/**
- * 购物车业务实现。
- */
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
-    /** 购物车表数据访问对象。 */
     private final CartMapper cartMapper;
-    /** 用户校验器（纵深防御：确认用户存在且有效）。 */
-    private final UserValidator userValidator;
-    /** 商家表数据访问对象。 */
     private final BusinessMapper businessMapper;
-    /** 食品表数据访问对象。 */
     private final FoodMapper foodMapper;
 
-    /**
-     * 查询用户购物车列表。
-     */
     @Override
-    public List<CartItemVO> listCartItems(String userId, Integer businessId) {
-        userValidator.requireActive(userId);
-        ServiceValidator.requireOptionalPositive(businessId, "businessId");
-        return cartMapper.findByUserId(userId, businessId).stream()
-                .map(this::assembleCartItem)
-                .toList();
+    public List<CartItemVO> list(Integer businessId) {
+        ensureCustomer();
+        Integer userId = CurrentUserContext.userId();
+        List<Cart> carts = cartMapper.list(userId, businessId);
+        List<CartItemVO> result = new ArrayList<>(carts.size());
+        for (Cart cart : carts) {
+            result.add(toVO(cart));
+        }
+        return result;
     }
 
-    /**
-     * 新增购物车条目；已存在相同食品时累加数量。
-     */
     @Override
-    public CartItemVO upsertCartItem(String userId, CartCreateRequest request) {
-        userValidator.requireActive(userId);
-        validateCreateRequest(request);
-
-        Business business = businessMapper.findById(request.getBusinessId());
-        Food food = foodMapper.findByIdAndBusinessId(request.getFoodId(), request.getBusinessId());
-        if (business == null || food == null) {
-            throw ApiException.notFound();
+    @Transactional
+    public CartItemVO add(CartItemSaveRequest request) {
+        ensureCustomer();
+        int quantity = request.quantity() == null ? 1 : request.quantity();
+        if (quantity < 1) {
+            throw new BadRequestException("数量必须大于0");
         }
 
-        int quantity = request.getQuantity() == null ? 1 : request.getQuantity();
-        Cart existing = cartMapper.findExisting(userId, request.getBusinessId(), request.getFoodId());
-        if (existing != null) {
-            cartMapper.increaseQuantity(existing.getId(), quantity);
-            Cart updated = cartMapper.findByIdForUser(userId, existing.getId());
-            return VoConverters.toCartItemVO(updated, business, food);
+        Business business = loadBusiness(request.businessId());
+        if (business.getStatus() == BusinessStatus.CLOSED) {
+            throw new ForbiddenException("商家已打烊");
+        }
+        Food food = loadFood(request.foodId());
+        if (!food.getBusinessId().equals(business.getId())) {
+            throw new BadRequestException("商品不属于该商家");
+        }
+        if (food.getStatus() != FoodStatus.ONLINE) {
+            throw new ForbiddenException("商品已下架");
         }
 
-        Cart cart = new Cart();
-        cart.setUserId(userId);
-        cart.setBusinessId(request.getBusinessId());
-        cart.setFoodId(request.getFoodId());
-        cart.setQuantity(quantity);
-        cartMapper.insert(cart);
-        return VoConverters.toCartItemVO(cart, business, food);
+        Integer userId = CurrentUserContext.userId();
+        Cart exist = cartMapper.findByUserAndFood(userId, request.foodId());
+        Cart cart;
+        if (exist == null) {
+            cart = new Cart(cartMapper.nextId(), userId, request.businessId(), request.foodId(), quantity);
+            cartMapper.insert(cart);
+        } else {
+            int newQuantity = exist.getQuantity() + quantity;
+            cartMapper.updateQuantity(userId, request.foodId(), newQuantity);
+            exist.setQuantity(newQuantity);
+            cart = exist;
+        }
+        return toVO(cart);
     }
 
-    /**
-     * 修改用户购物车中指定条目的数量。
-     */
     @Override
-    public CartItemVO updateCartItemQuantity(String userId, Integer cartId, CartUpdateRequest request) {
-        userValidator.requireActive(userId);
-        ServiceValidator.requirePositive(cartId, "cartId");
-        if (request == null) {
-            throw ApiException.badRequest("body", "请求体不能为空");
-        }
-        ServiceValidator.requirePositive(request.getQuantity(), "quantity");
+    @Transactional
+    public CartItemVO update(Integer foodId, CartItemUpdateRequest request) {
+        ensureCustomer();
+        Cart cart = loadCart(foodId);
+        cartMapper.updateQuantity(cart.getUserId(), cart.getFoodId(), request.quantity());
+        cart.setQuantity(request.quantity());
+        return toVO(cart);
+    }
 
-        Cart cart = cartMapper.findByIdForUser(userId, cartId);
+    @Override
+    @Transactional
+    public void remove(Integer foodId) {
+        ensureCustomer();
+        Cart cart = loadCart(foodId);
+        cartMapper.deleteByUserAndFood(cart.getUserId(), cart.getFoodId());
+    }
+
+    @Override
+    @Transactional
+    public void clear(Integer businessId) {
+        ensureCustomer();
+        Integer userId = CurrentUserContext.userId();
+        if (businessId == null) {
+            cartMapper.clearByUser(userId);
+            return;
+        }
+        cartMapper.clearByUserAndBusiness(userId, businessId);
+    }
+
+    private void ensureCustomer() {
+        if (CurrentUserContext.role() != UserRole.CUSTOMER) {
+            throw new ForbiddenException("无权限操作");
+        }
+    }
+
+    private Cart loadCart(Integer foodId) {
+        Cart cart = cartMapper.findByUserAndFood(CurrentUserContext.userId(), foodId);
         if (cart == null) {
-            throw ApiException.notFound();
+            throw new NotFoundException("购物车条目不存在");
         }
-        cartMapper.updateQuantity(userId, cartId, request.getQuantity());
-        Cart updated = cartMapper.findByIdForUser(userId, cartId);
-        return assembleCartItem(updated);
+        return cart;
     }
 
-    /**
-     * 按条件删除购物车条目。
-     */
-    @Override
-    public void deleteCartItemsByFilter(String userId, Integer businessId, Integer foodId) {
-        userValidator.requireActive(userId);
-        ServiceValidator.requireOptionalPositive(businessId, "businessId");
-        ServiceValidator.requireOptionalPositive(foodId, "foodId");
-        cartMapper.deleteByFilter(userId, businessId, foodId);
+    private Business loadBusiness(Integer businessId) {
+        Business business = businessMapper.findById(businessId);
+        if (business == null || business.getStatus() == BusinessStatus.DELETED) {
+            throw new NotFoundException("商家不存在");
+        }
+        return business;
     }
 
-    /**
-     * 删除指定购物车条目。
-     */
-    @Override
-    public void deleteCartItem(String userId, Integer cartId) {
-        userValidator.requireActive(userId);
-        ServiceValidator.requirePositive(cartId, "cartId");
-        if (cartMapper.findByIdForUser(userId, cartId) == null) {
-            throw ApiException.notFound();
+    private Food loadFood(Integer foodId) {
+        Food food = foodMapper.findById(foodId);
+        if (food == null) {
+            throw new NotFoundException("商品不存在");
         }
-        int affectedRows = cartMapper.deleteByIdForUser(userId, cartId);
-        if (affectedRows == 0) {
-            throw ApiException.notFound();
-        }
+        return food;
     }
 
-    /**
-     * 校验新增购物车条目的请求体。
-     */
-    private void validateCreateRequest(CartCreateRequest request) {
-        if (request == null) {
-            throw ApiException.badRequest("body", "请求体不能为空");
-        }
-        ServiceValidator.requirePositive(request.getBusinessId(), "businessId");
-        ServiceValidator.requirePositive(request.getFoodId(), "foodId");
-        if (request.getQuantity() != null) {
-            ServiceValidator.requirePositive(request.getQuantity(), "quantity");
-        }
-    }
-
-    /**
-     * 组装购物车条目的商家和食品展示信息。
-     */
-    private CartItemVO assembleCartItem(Cart cart) {
-        Business business = businessMapper.findById(cart.getBusinessId());
-        Food food = foodMapper.findById(cart.getFoodId());
-        return VoConverters.toCartItemVO(cart, business, food);
+    private CartItemVO toVO(Cart cart) {
+        Business business = loadBusiness(cart.getBusinessId());
+        Food food = loadFood(cart.getFoodId());
+        return new CartItemVO(cart, business, food);
     }
 }

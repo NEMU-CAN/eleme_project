@@ -11,26 +11,42 @@ const router = useRouter()
 const route = useRoute()
 const store = useHungryStore()
 const sortMode = ref<'recommended' | 'minOrder' | 'deliveryFee'>('recommended')
+const searchText = ref(typeof route.query.keyword === 'string' ? route.query.keyword : '')
 
-const activeOrderTypeId = computed(() => {
-  const value = Number(route.query.orderTypeId)
+const activeTasteId = computed(() => {
+  const raw = route.query.tasteId ?? route.query.orderTypeId
+  const value = Number(raw)
   return Number.isInteger(value) && value > 0 ? value : null
 })
 
+const activeStatus = computed(() => {
+  const value = Number(route.query.status)
+  return value === 0 || value === 1 ? value : null
+})
+
+const activeKeyword = computed(() => (typeof route.query.keyword === 'string' ? route.query.keyword.trim() : ''))
+
+watch(activeKeyword, (value) => {
+  searchText.value = value
+}, { immediate: true })
+
 watch(
-  activeOrderTypeId,
-  (value) => {
-    void store.loadBusinesses(value).catch(() => undefined)
+  [activeTasteId, activeStatus, activeKeyword],
+  ([tasteId, status, keyword]) => {
+    void store.loadBusinesses({
+      tasteId,
+      status,
+      keyword: keyword || null,
+    }).catch(() => undefined)
   },
   { immediate: true },
 )
 
-// 根据排序模式动态整理商家列表，便于切换综合、距离和销量。
 const sortedMerchants = computed(() => {
   const list = [...store.merchants]
 
   if (sortMode.value === 'minOrder') {
-    return list.sort((a, b) => a.minOrder - b.minOrder)
+    return list.sort((a, b) => (a.minOrder ?? a.startPrice) - (b.minOrder ?? b.startPrice))
   }
 
   if (sortMode.value === 'deliveryFee') {
@@ -40,26 +56,71 @@ const sortedMerchants = computed(() => {
   return list.sort((a, b) => Number(a.id) - Number(b.id))
 })
 
-// 顶部排序条的可选项，和页面上的按钮一一对应。
 const sortItems: Array<{ key: typeof sortMode.value; label: string; icon?: string }> = [
   { key: 'recommended', label: '综合排序', icon: 'chevronDown' },
   { key: 'minOrder', label: '起送最低' },
   { key: 'deliveryFee', label: '配送费低' },
 ]
+
+const statusTabs = [
+  { key: 'all', label: '全部', value: null as number | null },
+  { key: 'open', label: '营业中', value: 1 as number | null },
+  { key: 'closed', label: '已打烊', value: 0 as number | null },
+] as const
+
+function syncQuery(patch: Record<string, string | number | null | undefined>) {
+  const next = { ...(route.query as Record<string, string>) }
+  Object.entries(patch).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') {
+      delete next[key]
+      return
+    }
+    next[key] = String(value)
+  })
+  router.replace({ query: next })
+}
+
+function submitSearch() {
+  syncQuery({ keyword: searchText.value.trim() || null })
+}
+
+function clearSearch() {
+  searchText.value = ''
+  submitSearch()
+}
+
+function chooseStatus(value: number | null) {
+  syncQuery({ status: value })
+}
 </script>
 
 <template>
   <div class="page page--with-nav">
-    <!-- 页面头部：标题和返回首页入口。 -->
     <SiteHeader
       title="商家列表"
-      :eyebrow="activeOrderTypeId ? `分类 ${activeOrderTypeId}` : '全部商家'"
+      :eyebrow="activeTasteId ? `口味 ${activeTasteId}` : '全部商家'"
       backable
       compact
       @back="router.push('/')"
     />
 
-    <!-- 排序与筛选条：基于后端返回字段做前端排序。 -->
+    <section class="page__content section">
+      <div class="search-panel" style="cursor: default">
+        <UiIcon name="search" :size="18" />
+        <input
+          v-model="searchText"
+          class="search-panel__input"
+          type="search"
+          placeholder="搜索商家或菜品"
+          @keyup.enter="submitSearch"
+        />
+        <button v-if="searchText" type="button" class="chip" @click="clearSearch">清空</button>
+        <button type="button" class="primary-button" style="min-height: 36px; padding-inline: 14px" @click="submitSearch">
+          搜索
+        </button>
+      </div>
+    </section>
+
     <div class="sort-bar">
       <button
         v-for="item in sortItems"
@@ -72,13 +133,23 @@ const sortItems: Array<{ key: typeof sortMode.value; label: string; icon?: strin
         {{ item.label }}
         <UiIcon v-if="item.icon" :name="item.icon" :size="14" />
       </button>
-      <button type="button" class="sort-chip" @click="router.push('/businesses')">
-        筛选
-        <UiIcon name="filter" :size="14" />
-      </button>
     </div>
 
-    <!-- 商家列表：点击卡片进入商家详情。 -->
+    <section class="section">
+      <div class="sort-bar">
+        <button
+          v-for="tab in statusTabs"
+          :key="tab.key"
+          type="button"
+          class="sort-chip"
+          :class="{ 'sort-chip--active': activeStatus === tab.value }"
+          @click="chooseStatus(tab.value)"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+    </section>
+
     <section v-if="store.state.loading.businesses" class="page__content section">
       <div class="empty-state panel">
         <h3 class="empty-state__title">正在加载商家</h3>

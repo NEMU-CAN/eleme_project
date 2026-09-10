@@ -1,62 +1,41 @@
 package com.iteleme.backend.mapper;
 
-import com.iteleme.backend.entity.Order;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
+import com.iteleme.backend.entity.OrderDetail;
+import com.iteleme.backend.entity.Orders;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
-/** 订单数据访问接口。 */
-@Mapper
 public interface OrderMapper {
-    /** 查询某个用户的订单列表，可按商家和状态筛选。 */
-    List<Order> findByUserId(@Param("userId") String userId,
-                             @Param("businessId") Integer businessId,
-                             @Param("orderState") Integer orderState);
+    int insert(Orders order);
 
-    /** 根据用户和订单编号查询订单。 */
-    @Select("""
-            SELECT id,
-                   user_id AS userId,
-                   business_id AS businessId,
-                   order_date AS orderDate,
-                   order_total AS orderTotal,
-                   address_id AS addressId,
-                   address_contact_name AS addressContactName,
-                   address_contact_sex AS addressContactSex,
-                   address_contact_tel AS addressContactTel,
-                   address_detail AS addressDetail,
-                   order_status AS orderStatus
-            FROM orders
-            WHERE user_id = #{userId} AND id = #{orderId}
-            """)
-    Order findByIdForUser(@Param("userId") String userId, @Param("orderId") Integer orderId);
+    Orders findById(@Param("id") Integer id);
 
-    /** 新增订单。 */
-    @Insert("""
-            INSERT INTO orders(user_id, business_id, order_date, order_total, address_id,
-                               address_contact_name, address_contact_sex, address_contact_tel, address_detail,
-                               order_status)
-            VALUES (#{userId}, #{businessId}, #{orderDate}, #{orderTotal}, #{addressId},
-                    #{addressContactName}, #{addressContactSex}, #{addressContactTel}, #{addressDetail},
-                    #{orderStatus})
-            """)
-    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
-    int insert(Order order);
+    long count(@Param("userId") Integer userId,
+               @Param("role") Integer role,
+               @Param("businessIds") List<Integer> businessIds,
+               @Param("businessId") Integer businessId,
+               @Param("orderStatus") Integer orderStatus);
 
-    /**
-     * 将指定用户的未支付订单标记为已支付。
-     */
-    @Update("""
-            UPDATE orders
-            SET order_status = 1
-            WHERE user_id = #{userId}
-              AND id = #{orderId}
-              AND order_status = 0
-            """)
-    int markAsPaid(@Param("userId") String userId, @Param("orderId") Integer orderId);
+    List<Orders> list(@Param("userId") Integer userId,
+                      @Param("role") Integer role,
+                      @Param("businessIds") List<Integer> businessIds,
+                      @Param("businessId") Integer businessId,
+                      @Param("orderStatus") Integer orderStatus,
+                      @Param("offset") int offset,
+                      @Param("pageSize") int pageSize);
+
+    int updateStatus(@Param("id") Integer id, @Param("orderStatus") Integer orderStatus);
+
+    int updateStatusIfMatch(@Param("id") Integer id,
+                            @Param("oldStatus") Integer oldStatus,
+                            @Param("newStatus") Integer newStatus);
+
+    int insertDetail(OrderDetail detail);
+
+    List<OrderDetail> details(@Param("orderId") Integer orderId);
+
+    Integer nextId();
+
+    Integer nextDetailId();
 }
