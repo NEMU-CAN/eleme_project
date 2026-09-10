@@ -14,7 +14,6 @@ import com.iteleme.backend.mapper.UserMapper;
 import com.iteleme.backend.service.UserService;
 import com.iteleme.backend.service.support.TokenInvalidator;
 import com.iteleme.backend.service.support.UserValidator;
-import com.iteleme.backend.support.TokenHashUtil;
 import com.iteleme.backend.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+    private final JwtUtil jwtUtil;
     private final UserMapper userMapper;
     private final UserValidator userValidator;
     private final TokenInvalidator tokenInvalidator;
@@ -67,8 +67,8 @@ public class UserServiceImpl implements UserService {
         if (user.getStatus() != 0) {
             throw new ForbiddenException("账号已禁用");
         }
-        String token = JwtUtil.create(user.getId(), user.getRole());
-        user.setCurrentTokenHash(TokenHashUtil.hash(token));
+        String token = jwtUtil.create(user.getId(), user.getRole());
+        user.setCurrentTokenHash(jwtUtil.hash(token));
         userMapper.update(user);
         return UserVO.from(user).withToken(token);
     }
