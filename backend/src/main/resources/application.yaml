@@ -18,3 +18,9 @@ mybatis:
     map-underscore-to-camel-case: true
     # 方便本地调试 SQL，正式环境可关闭
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+app:
+  jwt:
+    # JWT签名密钥（生产环境请修改为复杂的随机字符串）
+    secret: eleme-backend-secret-change-in-production
+    # Token过期时间（小时）
+    expire-hours: 24

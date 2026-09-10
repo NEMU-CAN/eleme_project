@@ -5,7 +5,6 @@ import com.iteleme.backend.context.LoginUser;
 import com.iteleme.backend.entity.User;
 import com.iteleme.backend.exception.UnauthorizedException;
 import com.iteleme.backend.mapper.UserMapper;
-import com.iteleme.backend.support.TokenHashUtil;
 import lombok.RequiredArgsConstructor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,6 +15,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 @RequiredArgsConstructor
 public class JwtInterceptor implements HandlerInterceptor {
+    private final JwtUtil jwtUtil;
     private final UserMapper userMapper;
 
     @Override
@@ -38,7 +38,7 @@ public class JwtInterceptor implements HandlerInterceptor {
         String token = authorization.substring(7);
         LoginUser currentUser;
         try {
-            currentUser = JwtUtil.parse(token);
+            currentUser = jwtUtil.parse(token);
         } catch (RuntimeException e) {
             throw new UnauthorizedException("登录已失效，请重新登录");
         }
@@ -46,7 +46,7 @@ public class JwtInterceptor implements HandlerInterceptor {
         if (user == null || user.getStatus() != 0) {
             throw new UnauthorizedException("账号不可用");
         }
-        String currentTokenHash = TokenHashUtil.hash(token);
+        String currentTokenHash = jwtUtil.hash(token);
         if (!java.util.Objects.equals(currentTokenHash, user.getCurrentTokenHash())) {
             throw new UnauthorizedException("登录已失效，请重新登录");
         }
