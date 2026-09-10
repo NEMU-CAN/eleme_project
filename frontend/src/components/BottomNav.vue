@@ -6,12 +6,14 @@ import { useHungryStore } from '@/composables/useHungryStore'
 
 const store = useHungryStore()
 
-// 底部主导航，固定在页面底部，订单角标直接读取未支付数量。
+// 购物车角标：统计所有商品数量。
+const cartCount = computed(() => store.state.cartItems.reduce((total, line) => total + line.quantity, 0))
+
+// 底部三栏导航：首页 / 购物车 / 我的。
 const items = computed(() => [
   { label: '首页', icon: 'home', to: '/' },
-  { label: '商家', icon: 'compass', to: '/businesses' },
-  { label: '订单', icon: 'orders', to: '/orders', badge: store.unpaidOrders.value || undefined },
-  { label: '我的', icon: 'user', to: '/me' },
+  { label: '购物车', icon: 'cart', to: '/cart', badge: cartCount.value || undefined },
+  { label: '我的', icon: 'smile', to: '/me' },
 ])
 </script>
 
@@ -24,13 +26,11 @@ const items = computed(() => [
       class="bottom-nav__item"
       v-slot="{ isActive }"
     >
-      <span class="bottom-nav__icon-wrap" :class="{ 'bottom-nav__icon-wrap--active': isActive }">
-        <UiIcon :name="item.icon" :size="20" />
+      <span class="bottom-nav__icon-wrap">
+        <UiIcon :name="item.icon" :size="24" />
         <span v-if="item.badge" class="bottom-nav__badge">{{ item.badge }}</span>
       </span>
-      <span class="bottom-nav__label" :class="{ 'bottom-nav__label--active': isActive }">
-        {{ item.label }}
-      </span>
+      <span class="bottom-nav__label">{{ item.label }}</span>
     </RouterLink>
   </nav>
 </template>

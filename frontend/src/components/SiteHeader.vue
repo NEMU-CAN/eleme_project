@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import UiIcon from '@/components/UiIcon.vue'
 
-// 统一页面头部，支持主标题、副标题、返回按钮和右侧扩展区。
+// 统一页面头部，支持标题、返回按钮和右侧扩展区。
 withDefaults(
   defineProps<{
     title: string
-    eyebrow?: string
     backable?: boolean
-    compact?: boolean
   }>(),
   {
     backable: false,
-    compact: false,
   },
 )
 
@@ -21,15 +18,13 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <header class="site-header" :class="{ 'site-header--compact': compact }">
-    <button v-if="backable" type="button" class="icon-button icon-button--soft" @click="emit('back')">
-      <UiIcon name="chevronLeft" :size="18" />
+  <header class="site-header">
+    <button v-if="backable" type="button" class="site-header__back" @click="emit('back')">
+      <UiIcon name="chevronLeft" :size="20" />
     </button>
-    <div class="site-header__copy">
-      <p v-if="eyebrow" class="site-header__eyebrow">{{ eyebrow }}</p>
-      <h1 class="site-header__title">{{ title }}</h1>
-    </div>
-    <div class="site-header__actions">
+    <span v-else style="width: 32px; margin-left: -6px" />
+    <h1 class="site-header__title">{{ title }}</h1>
+    <div class="site-header__actions" style="width: 32px; justify-content: flex-end">
       <slot name="actions" />
     </div>
   </header>

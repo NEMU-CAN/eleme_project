@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/SiteHeader.vue'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
-import { formatCny, formatGender, formatOrderStatus, formatOrderTime, maskPhone } from '@/utils/format'
+import { formatCny, formatOrderStatus, formatOrderTime, maskPhone } from '@/utils/format'
 import type { PaymentMethod } from '@/types'
 
 const route = useRoute()
@@ -32,7 +32,6 @@ onMounted(async () => {
     router.replace({ path: '/login', query: { redirect: route.fullPath } })
     return
   }
-
   try {
     error.value = ''
     await store.fetchOrder(orderId.value)
@@ -46,11 +45,11 @@ function goBack() {
     router.push(`/merchant/${order.value.businessId}`)
     return
   }
-  router.push('/businesses')
+  router.push('/')
 }
 
-function choosePayment(method: PaymentMethod) {
-  selectedPayment.value = method
+function changeAddress() {
+  router.push('/addresses')
 }
 
 function statusClass(status: string) {
@@ -67,126 +66,102 @@ function proceed() {
   if (!order.value) {
     return
   }
-
   if (order.value.status !== 'unpaid') {
     router.push('/orders')
     return
   }
-
   router.push(`/payment/${order.value.id}`)
 }
 </script>
 
 <template>
-  <div class="page page--bare">
-    <SiteHeader title="确认订单" eyebrow="结算前最后一步" backable @back="goBack" />
+  <div class="page page--bare" style="background: var(--bg)">
+    <SiteHeader title="确认订单" backable @back="goBack" />
 
     <template v-if="order">
-      <section class="page__content">
-        <div class="order-summary panel">
-          <div class="order-summary__head">
-            <div>
-              <p class="eyebrow">订单信息</p>
-              <h3 class="order-summary__title">{{ order.merchantName }}</h3>
-              <p class="order-summary__text">下单时间 {{ formatOrderTime(order.createdAt) }}</p>
-            </div>
-            <span :class="statusClass(order.status)">
-              <UiIcon name="clock" :size="14" />
-              {{ formatOrderStatus(order.status) }}
-            </span>
+      <!-- 收货地址 -->
+      <section class="card">
+        <div style="display: flex; align-items: center; gap: 10px">
+          <UiIcon name="pin" :size="18" style="color: var(--primary)" />
+          <div style="flex: 1; min-width: 0">
+            <p class="card__title">{{ order.addressName || '地址信息待同步' }}</p>
+            <p class="card__sub">{{ order.addressDetail || '详细地址待同步' }} · {{ maskPhone(order.addressPhone) }}</p>
           </div>
-
-          <div class="info-card panel--soft checkout-address">
-            <div class="info-card__header">
-              <div>
-                <p class="eyebrow">收货信息</p>
-                <h4 class="info-card__title">{{ order.addressName || '地址信息待同步' }}</h4>
-              </div>
-              <span class="status-pill">
-                <UiIcon name="pin" :size="14" />
-                {{ formatGender(order.receiverGender) }}
-              </span>
-            </div>
-            <p class="info-card__text">
-              {{ order.addressDetail || '详细地址待同步' }}
-              <br />
-              {{ maskPhone(order.addressPhone) }}
-            </p>
-          </div>
-
-          <div class="order-summary__list">
-            <div v-for="item in order.items" :key="item.id" class="order-summary__line">
-              <span>{{ item.name }} x {{ item.quantity }}</span>
-              <span>{{ formatCny(item.price * item.quantity) }}</span>
-            </div>
-            <div class="order-summary__line">
-              <span>配送费</span>
-              <span>{{ formatCny(order.deliveryFee) }}</span>
-            </div>
-          </div>
-
-          <div class="order-summary__total">
-            <span>合计</span>
-            <strong>{{ formatCny(order.total) }}</strong>
-          </div>
+          <button type="button" style="color: var(--text-3); font-size: 13px" @click="changeAddress">
+            更改地址
+            <UiIcon name="chevronRight" :size="14" />
+          </button>
         </div>
       </section>
 
-      <section class="page__content section">
-        <div class="info-card panel">
-          <div class="info-card__header">
-            <div>
-              <p class="eyebrow">支付方式</p>
-              <h3 class="info-card__title">选择支付渠道</h3>
-            </div>
-            <span class="status-pill">
-              <UiIcon name="wallet" :size="14" />
-              后端订单
-            </span>
+      <!-- 商家与菜品 -->
+      <section class="card">
+        <div style="display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line)">
+          <img :src="order.merchantImage" :alt="order.merchantName" width="40" height="40" style="border-radius: 8px; object-fit: cover" />
+          <div style="flex: 1; min-width: 0">
+            <p class="card__title">{{ order.merchantName }}</p>
+            <p class="card__sub">{{ formatOrderTime(order.createdAt) }}</p>
           </div>
-          <div class="timeline-list">
-            <button
-              v-for="method in paymentMethods"
-              :key="method.id"
-              type="button"
-              class="timeline-item panel--soft payment-method"
-              :class="{ 'payment-method--active': selectedPayment === method.id }"
-              @click="choosePayment(method.id)"
-            >
-              <div class="timeline-item__top">
-                <div class="merchant-card__metrics payment-method__content">
-                  <img :src="method.image" :alt="method.title" width="112" height="32" />
-                  <div>
-                    <p class="timeline-item__name">{{ method.title }}</p>
-                    <p class="timeline-item__meta">{{ method.subtitle }}</p>
-                  </div>
-                </div>
-                <span v-if="selectedPayment === method.id" class="status-pill status-pill--success">
-                  <UiIcon name="check" :size="14" />
-                  已选中
-                </span>
-              </div>
-            </button>
+          <span :class="statusClass(order.status)">
+            <UiIcon name="clock" :size="14" />
+            {{ formatOrderStatus(order.status) }}
+          </span>
+        </div>
+
+        <div style="padding: 10px 0">
+          <div v-for="item in order.items" :key="item.id" class="row-line">
+            <span>{{ item.name }} x {{ item.quantity }}</span>
+            <span>{{ formatCny(item.price * item.quantity) }}</span>
           </div>
+          <div class="row-line">
+            <span>配送费</span>
+            <span>{{ formatCny(order.deliveryFee) }}</span>
+          </div>
+        </div>
+
+        <div class="total-line">
+          <span>合计</span>
+          <strong>{{ formatCny(order.total) }}</strong>
         </div>
       </section>
 
-      <section class="page__content section">
-        <p v-if="error" class="field__hint field__hint--danger">{{ error }}</p>
-        <button type="button" class="primary-button checkout-action" :disabled="store.state.loading.orders" @click="proceed">
-          {{ store.state.loading.orders ? '正在同步订单' : order.status === 'unpaid' ? '去支付' : '返回订单列表' }}
-        </button>
+      <!-- 支付方式 -->
+      <section class="card">
+        <p class="card__title">支付方式</p>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px">
+          <button
+            v-for="method in paymentMethods"
+            :key="method.id"
+            type="button"
+            class="pay-method"
+            :class="{ 'pay-method--active': selectedPayment === method.id }"
+            @click="selectedPayment = method.id"
+          >
+            <img class="pay-method__icon" :src="method.image" :alt="method.title" />
+            <div class="pay-method__info">
+              <p class="pay-method__name">{{ method.title }}</p>
+              <p class="pay-method__sub">{{ method.subtitle }}</p>
+            </div>
+            <span v-if="selectedPayment === method.id" class="status-pill status-pill--success">
+              <UiIcon name="check" :size="14" />
+            </span>
+          </button>
+        </div>
       </section>
-    </template>
 
-    <section v-else class="page__content">
-      <div class="empty-state panel">
-        <h3 class="empty-state__title">没有找到待结算订单</h3>
-        <p class="empty-state__text">{{ error || '订单可能已被支付或不存在，请返回订单列表查看。' }}</p>
-        <button type="button" class="primary-button" style="margin-top: 16px" @click="router.push('/businesses')">
-          去商家列表
+      <p v-if="error" class="auth-form__hint auth-form__hint--danger">{{ error }}</p>
+
+      <div class="form-actions">
+        <button type="button" class="primary-button primary-button--accent" :disabled="store.state.loading.orders" @click="proceed">
+          {{ store.state.loading.orders ? '正在同步订单' : order.status === 'unpaid' ? `去支付 ${formatCny(order.total)}` : '返回订单列表' }}
         </button>
       </div>
+    </template>
+
+    <section v-else class="empty-state">
+      <p class="empty-state__title">没有找到待结算订单</p>
+      <p class="empty-state__text">{{ error || '订单可能已被支付或不存在，请返回订单列表查看。' }}</p>
+      <button type="button" class="primary-button" style="margin-top: 16px" @click="router.push('/')">去首页</button>
     </section>
   </div>
 </template>
