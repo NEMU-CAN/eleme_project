@@ -1,47 +1,46 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import UiIcon from '@/components/UiIcon.vue'
 import type { Merchant } from '@/types'
 import { formatBusinessStatus, formatCny } from '@/utils/format'
 
-// 商家卡片用于首页推荐区和商家列表页，承载一整张商户信息卡。
-withDefaults(
+const props = withDefaults(
   defineProps<{
     merchant: Merchant
-    compact?: boolean
   }>(),
-  {
-    compact: false,
-  },
+  {},
 )
+
+// 列表页通常不含菜品，只有访问过商家详情后才会有缓存；这里做优雅回退。
+const foods = computed(() => props.merchant.menuSections.flatMap((section) => section.items).slice(0, 8))
 </script>
 
 <template>
-  <RouterLink :to="`/merchant/${merchant.id}`" class="merchant-card panel">
-    <div class="merchant-card__media">
+  <RouterLink :to="`/merchant/${merchant.id}`" class="merchant-card">
+    <div class="merchant-card__head">
       <img class="merchant-card__image" :src="merchant.image" :alt="merchant.name" />
-      <span class="merchant-card__rank">商家 {{ merchant.id }}</span>
-    </div>
-    <div class="merchant-card__body">
-      <div class="merchant-card__top">
-        <div>
-          <h3 class="merchant-card__title">{{ merchant.name }}</h3>
-          <p class="merchant-card__subtitle">{{ merchant.address || '地址待商家补充' }}</p>
-        </div>
-        <span class="merchant-card__tag">
-          <UiIcon name="check" :size="14" />
+      <div class="merchant-card__info">
+        <h3 class="merchant-card__name">{{ merchant.name }}</h3>
+        <p class="merchant-card__meta">
+          ¥{{ merchant.minOrder ?? merchant.startPrice }} 起送 · 配送 ¥{{ merchant.deliveryFee }}
+        </p>
+        <p class="merchant-card__status" :class="{ 'merchant-card__status--closed': merchant.status !== 'open' }">
           {{ formatBusinessStatus(merchant.status) }}
-        </span>
+        </p>
       </div>
-      <div class="merchant-card__metrics">
-        <span class="merchant-card__metric">分类 {{ merchant.orderTypeId }}</span>
-        <span class="merchant-card__metric">{{ formatCny(merchant.minOrder ?? 0) }} 起送</span>
-        <span class="merchant-card__metric">{{ formatCny(merchant.deliveryFee ?? 0) }} 配送</span>
+    </div>
+
+    <div v-if="foods.length" class="merchant-card__foods">
+      <div v-for="food in foods" :key="food.id" class="merchant-card__food">
+        <img class="merchant-card__food-image" :src="food.image" :alt="food.name" />
+        <span class="merchant-card__food-name">{{ food.name }}</span>
+        <span class="merchant-card__food-price">¥{{ food.price }}</span>
       </div>
-      <div class="merchant-card__footer">
-        <span>{{ merchant.description || '暂无商家介绍' }}</span>
-      </div>
-      <p class="merchant-card__promo">{{ merchant.description || merchant.remark || '点击进入后将从后端加载菜单' }}</p>
+    </div>
+    <div v-else class="merchant-card__hint">
+      <UiIcon name="chevronRight" :size="12" />
+      {{ merchant.description || '点击进入查看菜单' }}
     </div>
   </RouterLink>
 </template>
