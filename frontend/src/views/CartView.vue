@@ -2,199 +2,76 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BottomNav from '@/components/BottomNav.vue'
+import QuantityStepper from '@/components/QuantityStepper.vue'
+import LazyImage from '@/components/LazyImage.vue'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
-import type { CartLine, Merchant } from '@/types'
+import { formatCny } from '@/utils/format'
+import type { CartLine, MenuItem } from '@/types'
 
 const router = useRouter()
 const store = useHungryStore()
+const editing = ref(false)
 const error = ref('')
-const selected = ref<string[]>([])
-
-interface CartGroup {
-  businessId: string
-  merchant: Merchant | null
-  name: string
-  image: string
-  lines: CartLine[]
-  subtotal: number
-}
-
-const groups = computed<CartGroup[]>(() => {
-  const map = new Map<string, CartGroup>()
-  for (const line of store.state.cartItems) {
-    const merchant = store.getMerchant(line.businessId)
-    let group = map.get(line.businessId)
-    if (!group) {
-      group = {
-        businessId: line.businessId,
-        merchant: merchant ?? null,
-        name: merchant?.name || `商家 ${line.businessId}`,
-        image: merchant?.image || line.image,
-        lines: [],
-        subtotal: 0,
-      }
-      map.set(line.businessId, group)
-    }
-    group.lines.push(line)
-    group.subtotal += line.price * line.quantity
-  }
-  return [...map.values()]
-})
-
-const cartCount = computed(() => store.state.cartItems.reduce((total, line) => total + line.quantity, 0))
-const allSelected = computed(() => groups.value.length > 0 && selected.value.length === groups.value.length)
-const selectedTotal = computed(() =>
-  groups.value
-    .filter((group) => selected.value.includes(group.businessId))
-    .reduce((total, group) => total + group.subtotal, 0),
-)
-
-const heroAddress = computed(() => {
-  if (store.activeAddress.value) {
-    return store.activeAddress.value.detail
-  }
-  return store.isAuthenticated.value ? '请选择收货地址' : '登录后同步购物车'
-})
 
 onMounted(async () => {
-  if (!store.isAuthenticated.value) {
-    return
-  }
-  try {
-    error.value = ''
-    await Promise.all([store.loadCart(), store.loadAddresses()])
-  } catch (cause) {
-    error.value = store.messageFromError(cause)
-  }
+  if (!store.state.user) return void router.replace({ path: '/login', query: { redirect: '/cart' } })
+  try { await Promise.all([store.loadBusinesses(), store.loadCart()]) } catch (cause) { error.value = store.messageFromError(cause) }
 })
 
-function toggleGroup(businessId: string) {
-  if (selected.value.includes(businessId)) {
-    selected.value = selected.value.filter((id) => id !== businessId)
-  } else {
-    selected.value = [...selected.value, businessId]
-  }
-}
+const groups = computed(() => {
+  const map = new Map<string, CartLine[]>()
+  for (const line of store.state.cartItems) map.set(line.businessId, [...(map.get(line.businessId) ?? []), line])
+  return [...map.entries()].map(([merchantId, lines]) => {
+    const merchant = store.getMerchant(merchantId)
+    const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0)
+    return { merchantId, merchant, lines, subtotal }
+  })
+})
 
-function toggleAll() {
-  if (allSelected.value) {
-    selected.value = []
-  } else {
-    selected.value = groups.value.map((group) => group.businessId)
-  }
+async function add(line: CartLine) {
+  const item: MenuItem = { id: line.foodId, businessId: line.businessId, name: line.name, description: '', price: line.price, image: line.image, stock: line.stock, reservedStock: line.reservedStock, status: line.status }
+  try { await store.addToCart(line.businessId, item) } catch (cause) { error.value = store.messageFromError(cause) }
 }
-
-function goMerchant(businessId: string) {
-  router.push(`/merchant/${businessId}`)
+async function remove(line: CartLine) {
+  try { await store.removeFromCart(line.businessId, line.foodId) } catch (cause) { error.value = store.messageFromError(cause) }
 }
-
-async function removeGroup(businessId: string) {
-  try {
-    error.value = ''
-    await store.clearCart(businessId)
-    selected.value = selected.value.filter((id) => id !== businessId)
-  } catch (cause) {
-    error.value = store.messageFromError(cause)
-  }
+async function clear(merchantId: string) {
+  try { await store.clearCart(merchantId) } catch (cause) { error.value = store.messageFromError(cause) }
 }
-
-async function checkoutSelected() {
-  if (!selected.value.length) {
-    return
-  }
-  if (!store.isAuthenticated.value) {
-    router.push({ path: '/login', query: { redirect: '/cart' } })
-    return
-  }
-  try {
-    error.value = ''
-    const orderIds: string[] = []
-    for (const businessId of selected.value) {
-      orderIds.push(await store.prepareCheckout(businessId))
-    }
-    if (orderIds.length) {
-      router.push(`/checkout/${orderIds[0]}`)
-    }
-  } catch (cause) {
-    const message = store.messageFromError(cause)
-    error.value = message
-    if (message.includes('收货地址')) {
-      router.push('/addresses')
-    }
-  }
-}
-
-function goLogin() {
-  router.push('/login')
+async function checkout(merchantId: string) {
+  try { const id = await store.prepareCheckout(merchantId); router.push(`/checkout/${id}`) } catch (cause) { error.value = store.messageFromError(cause) }
 }
 </script>
 
 <template>
-  <div class="page page--with-dock">
-    <!-- 顶部地址栏 -->
-    <div class="location-bar">
-      <UiIcon class="location-bar__icon" name="pin" :size="18" />
-      <span class="location-bar__label">{{ heroAddress }}</span>
-    </div>
+  <div class="page page--with-nav ele-cart-page">
+    <header class="ele-cart-header">
+      <div><button @click="router.back()"><UiIcon name="chevronLeft" :size="22" /></button><h1>购物车</h1><button @click="editing = !editing">{{ editing ? '完成' : '管理' }}</button></div>
+      <p><UiIcon name="pin" :size="14" /> 天津大学北洋园校区</p>
+    </header>
 
-    <p v-if="error" class="auth-form__hint auth-form__hint--danger">{{ error }}</p>
-
-    <!-- 空购物车 -->
-    <div v-if="store.isAuthenticated && !store.state.loading.cart && !groups.length" class="cart-empty">
-      <UiIcon class="cart-empty__face" name="sad" :size="64" />
-      <p class="cart-empty__text">这里空空如也，快去买入你喜欢的食物吧</p>
-      <button type="button" class="primary-button" @click="router.push('/')">去逛逛</button>
-    </div>
-
-    <!-- 未登录 -->
-    <div v-else-if="!store.isAuthenticated" class="cart-empty">
-      <UiIcon class="cart-empty__face" name="sad" :size="64" />
-      <p class="cart-empty__text">登录后查看你的购物车</p>
-      <button type="button" class="primary-button" @click="goLogin">去登录</button>
-    </div>
-
-    <!-- 购物车按商家分组 -->
-    <div v-else class="merchant-list">
-      <article v-for="group in groups" :key="group.businessId" class="cart-group">
-        <div class="cart-group__head">
-          <span class="checkbox" :class="{ 'checkbox--on': selected.includes(group.businessId) }" @click="toggleGroup(group.businessId)">
-            <UiIcon v-if="selected.includes(group.businessId)" name="check" :size="14" />
-          </span>
-          <img class="cart-group__image" :src="group.image" :alt="group.name" />
-          <h3 class="cart-group__name" @click="goMerchant(group.businessId)">{{ group.name }}</h3>
-          <button type="button" class="cart-group__trash" aria-label="删除" @click="removeGroup(group.businessId)">
-            <UiIcon name="trash" :size="20" />
-          </button>
+    <main class="ele-cart-content">
+      <p v-if="error" class="ele-store-error">{{ error }}</p>
+      <section v-for="group in groups" :key="group.merchantId" class="ele-cart-shop">
+        <div class="ele-cart-shop__head">
+          <button @click="router.push(`/merchant/${group.merchantId}`)"><strong>{{ group.merchant?.name || `商家 ${group.merchantId}` }}</strong><UiIcon name="chevronRight" :size="15" /></button>
+          <span>{{ 25 + Number(group.merchantId) }}分钟</span>
         </div>
-
-        <div class="cart-line" @click="goMerchant(group.businessId)">
-          <img class="cart-line__image" :src="group.lines[0]?.image" alt="" />
-          <div class="cart-line__info">
-            <p class="cart-line__name">{{ group.lines.map((line) => `${line.name} x${line.quantity}`).join('、') }}</p>
-            <p class="cart-line__price">¥{{ group.subtotal }}</p>
-          </div>
-          <UiIcon name="chevronRight" :size="16" />
+        <div v-for="line in group.lines" :key="line.cartId" class="ele-cart-line">
+          <LazyImage :src="line.image" :alt="line.name" />
+          <div class="ele-cart-line__body"><h3>{{ line.name }}</h3><p>新鲜现做 · 到店同价</p><strong>{{ formatCny(line.price) }}</strong></div>
+          <QuantityStepper :quantity="line.quantity" size="small" :disabled="store.state.loading.action" @add="add(line)" @remove="remove(line)" />
         </div>
-      </article>
-    </div>
-
-    <!-- 底部一键结算 -->
-    <div v-if="groups.length" class="checkout-dock">
-      <button type="button" class="checkout-dock__select" @click="toggleAll">
-        <span class="checkbox" :class="{ 'checkbox--on': allSelected }">
-          <UiIcon v-if="allSelected" name="check" :size="14" />
-        </span>
-        全选
-      </button>
-      <div class="checkout-dock__total">
-        合计 <strong>¥{{ selectedTotal }}</strong>
-      </div>
-      <button type="button" class="cart-bar__action" :disabled="!selected.length || store.state.loading.action" @click="checkoutSelected">
-        {{ store.state.loading.action ? '结算中' : `一键结算(${selected.length})` }}
-      </button>
-    </div>
-
+        <div class="ele-cart-shop__foot">
+          <button v-if="editing" class="ele-cart-delete" @click="clear(group.merchantId)">清空</button>
+          <span>共 {{ group.lines.reduce((sum, item) => sum + item.quantity, 0) }} 件</span>
+          <b>{{ formatCny(group.subtotal) }}</b>
+          <button class="ele-cart-submit" :disabled="!store.cartCanCheckout(group.merchantId)" @click="checkout(group.merchantId)">去结算</button>
+        </div>
+      </section>
+      <div v-if="!groups.length" class="ele-empty ele-cart-empty"><UiIcon name="cart" :size="50" /><b>购物车还是空的</b><button @click="router.push('/')">去逛逛</button></div>
+    </main>
     <BottomNav />
   </div>
 </template>
