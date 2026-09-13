@@ -5,32 +5,20 @@ import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
 
 const store = useHungryStore()
-
-// 购物车角标：统计所有商品数量。
-const cartCount = computed(() => store.state.cartItems.reduce((total, line) => total + line.quantity, 0))
-
-// 底部三栏导航：首页 / 购物车 / 我的。
 const items = computed(() => [
   { label: '首页', icon: 'home', to: '/' },
-  { label: '购物车', icon: 'cart', to: '/cart', badge: cartCount.value || undefined },
-  { label: '我的', icon: 'smile', to: '/me' },
+  { label: '闪购', icon: 'compass', to: '/businesses' },
+  { label: '订单', icon: 'orders', to: '/orders', badge: store.unreadOrders.value || undefined },
+  { label: '购物车', icon: 'cart', to: '/cart', badge: store.state.cartItems.reduce((sum, item) => sum + item.quantity, 0) || undefined },
+  { label: '我的', icon: 'user', to: '/me' },
 ])
 </script>
 
 <template>
   <nav class="bottom-nav" aria-label="主导航">
-    <RouterLink
-      v-for="item in items"
-      :key="item.to"
-      :to="item.to"
-      class="bottom-nav__item"
-      v-slot="{ isActive }"
-    >
-      <span class="bottom-nav__icon-wrap">
-        <UiIcon :name="item.icon" :size="24" />
-        <span v-if="item.badge" class="bottom-nav__badge">{{ item.badge }}</span>
-      </span>
-      <span class="bottom-nav__label">{{ item.label }}</span>
+    <RouterLink v-for="item in items" :key="item.to" :to="item.to" class="bottom-nav__item" v-slot="{ isActive }">
+      <span class="bottom-nav__icon-wrap" :class="{ 'bottom-nav__icon-wrap--active': isActive }"><UiIcon :name="item.icon" :size="20" /><span v-if="item.badge" class="bottom-nav__badge">{{ item.badge }}</span></span>
+      <span class="bottom-nav__label" :class="{ 'bottom-nav__label--active': isActive }">{{ item.label }}</span>
     </RouterLink>
   </nav>
 </template>

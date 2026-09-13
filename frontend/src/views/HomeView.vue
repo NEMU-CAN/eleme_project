@@ -1,203 +1,86 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import BottomNav from '@/components/BottomNav.vue'
+import CategoryGrid from '@/components/CategoryGrid.vue'
 import MerchantCard from '@/components/MerchantCard.vue'
 import UiIcon from '@/components/UiIcon.vue'
+import { categories } from '@/data/categories'
 import { useHungryStore } from '@/composables/useHungryStore'
 
 const router = useRouter()
-const route = useRoute()
 const store = useHungryStore()
-
-const sortMode = ref<'recommended' | 'minOrder' | 'deliveryFee'>('recommended')
-const searchText = ref(typeof route.query.keyword === 'string' ? route.query.keyword : '')
-
-// 分类栏：全部 + 后端口味列表。
-const categoryItems = computed(() => [
-  { id: '', name: '全部', image: '', all: true },
-  ...store.tasteCategories.value.map((taste) => ({ id: taste.id, name: taste.name, image: taste.image, all: false })),
-])
-
-const activeTasteId = computed(() => {
-  const value = Number(route.query.tasteId)
-  return Number.isInteger(value) && value > 0 ? value : null
-})
-
-const activeStatus = computed(() => {
-  const value = Number(route.query.status)
-  return value === 0 || value === 1 ? value : null
-})
-
-const activeKeyword = computed(() => (typeof route.query.keyword === 'string' ? route.query.keyword.trim() : ''))
-
-const heroAddress = computed(() => {
-  if (store.activeAddress.value) {
-    return store.activeAddress.value.detail
-  }
-  return store.isAuthenticated.value ? '请选择收货地址' : '点击这里新增地址'
-})
-
-watch(activeKeyword, (value) => {
-  searchText.value = value
-}, { immediate: true })
-
-watch(
-  [activeTasteId, activeStatus, activeKeyword],
-  ([tasteId, status, keyword]) => {
-    void store.loadBusinesses({ tasteId, status, keyword: keyword || null }).catch(() => undefined)
-  },
-  { immediate: true },
-)
-
-const sortedMerchants = computed(() => {
-  const list = [...store.merchants]
-  if (sortMode.value === 'minOrder') {
-    return list.sort((a, b) => (a.minOrder ?? a.startPrice) - (b.minOrder ?? b.startPrice))
-  }
-  if (sortMode.value === 'deliveryFee') {
-    return list.sort((a, b) => a.deliveryFee - b.deliveryFee)
-  }
-  return list.sort((a, b) => Number(a.id) - Number(b.id))
-})
-
-const sortItems = [
-  { key: 'recommended', label: '综合排序' },
-  { key: 'minOrder', label: '起送最低' },
-  { key: 'deliveryFee', label: '配送费低' },
-] as const
-
-const statusItems = [
-  { label: '全部', value: null },
-  { label: '营业中', value: 1 },
-  { label: '已打烊', value: 0 },
-] as const
+const searchKeyword = ref('')
+const activeCategory = ref('all')
+const sortMode = ref<'all' | 'fast' | 'free'>('all')
 
 onMounted(() => {
   void store.loadBusinesses().catch(() => undefined)
-  if (store.isAuthenticated.value) {
-    void store.loadSessionData().catch(() => undefined)
-  }
+  if (store.state.user) void store.loadSessionData().catch(() => undefined)
 })
 
-function syncQuery(patch: Record<string, string | number | null | undefined>) {
-  const next = { ...(route.query as Record<string, string>) }
-  Object.entries(patch).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === '') {
-      delete next[key]
-      return
-    }
-    next[key] = String(value)
-  })
-  router.replace({ query: next })
-}
+const address = computed(() => store.activeAddress.value?.detail || (store.state.user ? '请选择收货地址' : '天津大学北洋园校区'))
+const merchants = computed(() => {
+  let list = [...store.merchants]
+  if (activeCategory.value !== 'all') list = list.filter((item) => String(item.orderTypeId) === activeCategory.value)
+  const keyword = searchKeyword.value.trim().toLowerCase()
+  if (keyword) list = list.filter((item) => [item.name, item.address, item.description].some((value) => value?.toLowerCase().includes(keyword)))
+  if (sortMode.value === 'fast') list.sort((a, b) => Number(a.id) - Number(b.id))
+  if (sortMode.value === 'free') list.sort((a, b) => a.deliveryFee - b.deliveryFee)
+  return list
+})
 
-function chooseTaste(id: string) {
-  syncQuery({ tasteId: id || null })
-}
-
-function chooseStatus(value: number | null) {
-  syncQuery({ status: value })
-}
-
-function submitSearch() {
-  syncQuery({ keyword: searchText.value.trim() || null })
-}
-
-function clearSearch() {
-  searchText.value = ''
-  submitSearch()
-}
-
-function goAddress() {
-  router.push('/addresses')
+function search() {
+  router.push({ path: '/businesses', query: searchKeyword.value.trim() ? { keyword: searchKeyword.value.trim() } : {} })
 }
 </script>
 
 <template>
-  <div class="page page--with-nav">
-    <!-- 定位栏 -->
-    <div class="location-bar" role="button" @click="goAddress">
-      <UiIcon class="location-bar__icon" name="pin" :size="18" />
-      <span class="location-bar__label">{{ heroAddress }}</span>
-      <span v-if="!store.activeAddress" class="location-bar__hint">· 添加收货地址</span>
-      <UiIcon name="chevronDown" :size="14" />
-    </div>
+  <div class="page page--with-nav ele-home">
+    <header class="ele-home__header">
+      <div class="ele-home__location-row">
+        <button type="button" class="ele-home__location" @click="router.push('/me')">
+          <UiIcon name="pin" :size="20" :stroke-width="2.6" />
+          <strong>{{ address }}</strong>
+          <UiIcon name="chevronDown" :size="15" />
+        </button>
+        <RouterLink to="/me" class="ele-home__round"><UiIcon name="user" :size="20" /></RouterLink>
+      </div>
+      <form class="ele-search" @submit.prevent="search">
+        <UiIcon name="search" :size="19" />
+        <input v-model="searchKeyword" placeholder="搜索商家或商品" />
+        <button type="submit">搜索</button>
+      </form>
+    </header>
 
-    <!-- 搜索栏 -->
-    <div class="search-bar">
-      <UiIcon class="search-bar__icon" name="search" :size="18" />
-      <input
-        v-model="searchText"
-        class="search-bar__input"
-        type="search"
-        placeholder="搜索商家或菜品"
-        @keyup.enter="submitSearch"
-      />
-      <button v-if="searchText" type="button" class="search-bar__button" style="background: #ccc" @click="clearSearch">
-        清空
-      </button>
-      <button type="button" class="search-bar__button" @click="submitSearch">搜索</button>
-    </div>
+    <main>
+      <div class="ele-home__category-wrap"><CategoryGrid :items="categories" /></div>
 
-    <!-- 店铺分类栏 -->
-    <div class="category-bar">
-      <button
-        v-for="item in categoryItems"
-        :key="item.id"
-        type="button"
-        class="category-chip"
-        :class="{ 'category-chip--active': (item.id === '' ? null : Number(item.id)) === activeTasteId }"
-        @click="chooseTaste(item.id)"
-      >
-        <span v-if="item.all" class="category-chip__image" style="display: inline-flex; align-items: center; justify-content: center; color: #999; background: #f2f2f2">
-          <UiIcon name="filter" :size="22" />
-        </span>
-        <img v-else class="category-chip__image" :src="item.image" :alt="item.name" />
-        <span class="category-chip__label">{{ item.name }}</span>
-      </button>
-    </div>
+      <section class="ele-quick-entry" aria-label="快捷服务">
+        <button type="button" @click="router.push('/businesses?orderTypeId=1')"><b>校园美食</b><span>热销餐厅</span></button>
+        <button type="button" @click="router.push('/businesses?orderTypeId=5')"><b>甜品饮品</b><span>下午茶必备</span></button>
+        <button type="button" @click="router.push('/cart')"><b>我的购物车</b><span>{{ store.state.cartItems.length ? `${store.state.cartItems.length} 件商品` : '快速查看' }}</span></button>
+      </section>
 
-    <!-- 筛选栏 -->
-    <div class="filter-bar">
-      <button
-        v-for="item in sortItems"
-        :key="item.key"
-        type="button"
-        class="filter-chip"
-        :class="{ 'filter-chip--active': sortMode === item.key }"
-        @click="sortMode = item.key"
-      >
-        {{ item.label }}
-        <UiIcon v-if="item.key === 'recommended'" name="chevronDown" :size="13" />
-      </button>
-      <span class="filter-divider" />
-      <button
-        v-for="item in statusItems"
-        :key="String(item.value)"
-        type="button"
-        class="filter-chip"
-        :class="{ 'filter-chip--active': activeStatus === item.value }"
-        @click="chooseStatus(item.value)"
-      >
-        {{ item.label }}
-      </button>
-    </div>
+      <section class="ele-shop-section">
+        <nav class="ele-channel-tabs">
+          <button :class="{ active: activeCategory === 'all' }" @click="activeCategory = 'all'">全部</button>
+          <button v-for="item in categories.slice(0, 4)" :key="item.id" :class="{ active: activeCategory === item.id }" @click="activeCategory = item.id">{{ item.name }}</button>
+        </nav>
+        <div class="ele-filter-row">
+          <button :class="{ active: sortMode === 'all' }" @click="sortMode = 'all'">综合排序 <UiIcon name="chevronDown" :size="12" /></button>
+          <button :class="{ active: sortMode === 'fast' }" @click="sortMode = 'fast'">30分钟</button>
+          <button :class="{ active: sortMode === 'free' }" @click="sortMode = 'free'">配送费低</button>
+          <button @click="router.push('/businesses')">筛选 <UiIcon name="filter" :size="13" /></button>
+        </div>
 
-    <!-- 商家列表 -->
-    <section v-if="store.state.loading.businesses" class="empty-state">
-      <p class="empty-state__text">正在加载商家…</p>
-    </section>
-
-    <section v-else-if="sortedMerchants.length" class="merchant-list">
-      <MerchantCard v-for="merchant in sortedMerchants" :key="merchant.id" :merchant="merchant" />
-    </section>
-
-    <section v-else class="empty-state">
-      <p class="empty-state__title">暂无商家</p>
-      <p class="empty-state__text">{{ store.state.error || '后端暂时没有返回符合条件的商家。' }}</p>
-    </section>
-
+        <div v-if="store.state.loading.businesses" class="ele-empty">正在加载附近商家…</div>
+        <div v-else-if="merchants.length" class="ele-merchant-list">
+          <MerchantCard v-for="merchant in merchants" :key="merchant.id" :merchant="merchant" />
+        </div>
+        <div v-else class="ele-empty">没有找到符合条件的商家</div>
+      </section>
+    </main>
     <BottomNav />
   </div>
 </template>
