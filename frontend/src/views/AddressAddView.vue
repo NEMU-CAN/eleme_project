@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import UiIcon from '@/components/UiIcon.vue'
@@ -58,40 +58,20 @@ async function save() {
 </script>
 
 <template>
-  <div class="form-page">
-    <header class="site-header">
-      <button type="button" class="site-header__back" @click="goBack">
-        <UiIcon name="chevronLeft" :size="20" />
-      </button>
-      <h1 class="site-header__title" style="text-align: left">新增地址</h1>
-    </header>
-
-    <div class="form-card">
-      <div class="field" style="align-items: flex-start">
-        <span class="field__label">地址</span>
-        <textarea v-model="form.address" class="field__control" rows="2" placeholder="请输入详细地址" />
-      </div>
-      <div class="field">
-        <span class="field__label">收货人</span>
-        <input v-model="form.contactName" class="field__control" type="text" placeholder="请输入姓名" />
-        <div class="seg">
-          <button type="button" class="seg__item" :class="{ 'seg__item--active': form.contactGender === 1 }" @click="form.contactGender = 1">先生</button>
-          <button type="button" class="seg__item" :class="{ 'seg__item--active': form.contactGender === 2 }" @click="form.contactGender = 2">女士</button>
-          <button type="button" class="seg__item" :class="{ 'seg__item--active': form.contactGender === 0 }" @click="form.contactGender = 0">保密</button>
-        </div>
-      </div>
-      <div class="field">
-        <span class="field__label">手机号</span>
-        <input v-model="form.contactTel" class="field__control" type="tel" placeholder="请输入手机号" />
-      </div>
-    </div>
-
-    <p v-if="error" class="auth-form__hint auth-form__hint--danger">{{ error }}</p>
-
-    <div class="form-actions">
-      <button type="button" class="primary-button primary-button--accent" :disabled="saving" @click="save">
-        {{ saving ? '新增中' : '新增' }}
-      </button>
-    </div>
+  <div class="page page--bare ele-address-page">
+    <header class="ele-address-header"><button @click="goBack"><UiIcon name="chevronLeft" :size="22" /></button><h1>新增收货地址</h1><span /></header>
+    <main class="ele-address-form-wrap">
+      <section class="ele-address-map-card"><i><UiIcon name="pin" :size="25" /></i><div><b>配送到哪里？</b><span>请填写准确地址，方便骑手快速送达</span></div></section>
+      <section class="ele-address-form-card">
+        <label class="ele-address-field ele-address-field--area"><span>收货地址</span><textarea v-model="form.address" rows="3" maxlength="100" placeholder="例如：天津大学北洋园校区 12 号楼 305室" /></label>
+        <label class="ele-address-field"><span>联系人</span><input v-model="form.contactName" type="text" maxlength="20" autocomplete="name" placeholder="请填写收货人姓名" /></label>
+        <div class="ele-address-field"><span>性别</span><div class="ele-address-gender"><button :class="{ active: form.contactGender === 1 }" @click="form.contactGender = 1">先生</button><button :class="{ active: form.contactGender === 2 }" @click="form.contactGender = 2">女士</button><button :class="{ active: form.contactGender === 0 }" @click="form.contactGender = 0">保密</button></div></div>
+        <label class="ele-address-field"><span>手机号</span><input v-model="form.contactTel" type="tel" maxlength="20" inputmode="tel" autocomplete="tel" placeholder="请填写联系人手机号" /></label>
+      </section>
+      <p class="ele-address-tip"><UiIcon name="check" :size="13" /> 地址仅用于配送，我们会妥善保护你的隐私</p>
+      <p v-if="error" class="ele-store-error">{{ error }}</p>
+    </main>
+    <footer class="ele-address-footer"><button :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存地址' }}</button></footer>
   </div>
 </template>
+
