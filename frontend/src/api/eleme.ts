@@ -373,6 +373,9 @@ export const elemeApi = {
   getBusiness(businessId: string | number) {
     return request<BackendBusinessVO>(`/api/businesses/${encodePath(businessId)}`)
   },
+  getMyBusinesses() {
+    return request<BackendBusinessVO[]>('/api/businesses/mine')
+  },
   createBusiness(payload: BusinessSaveRequest) {
     return request<BackendBusinessVO>('/api/businesses', {
       method: 'POST',

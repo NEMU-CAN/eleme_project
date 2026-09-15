@@ -65,6 +65,7 @@ interface PersistedSession {
 
 interface HungryState extends PersistedSession {
   bootstrapped: boolean
+  ownedMerchantIds: string[]
   tastes: TasteItem[]
   merchants: Merchant[]
   foodsByMerchantId: Record<string, MenuItem[]>
@@ -189,6 +190,7 @@ setAuthToken(initialSession.token)
 
 const state = reactive<HungryState>({
   bootstrapped: false,
+  ownedMerchantIds: [],
   token: initialSession.token,
   user: initialSession.user,
   activeMerchantId: initialSession.activeMerchantId,
@@ -245,6 +247,7 @@ function persistSession() {
 function clearProtectedData(options: { keepUser?: boolean } = {}) {
   state.checkoutDraft = null
   state.activeMerchantId = ''
+  replaceArray(state.ownedMerchantIds, [])
   state.addressId = ''
   replaceArray(state.addresses, [])
   replaceArray(state.orders, [])
@@ -710,6 +713,30 @@ async function ensureMerchantDetail(merchantId: string | number) {
   })
 }
 
+async function loadMyBusinesses() {
+  requireAuthUser()
+  return withLoading('businesses', async () => {
+    await ensureTastesLoaded().catch(() => undefined)
+    const data = await elemeApi.getMyBusinesses()
+    const ownedIds: string[] = []
+
+    for (const businessVo of data) {
+      const id = String(businessVo.business.id)
+      const foods = businessVo.foods.map(mapFood)
+      state.foodsByMerchantId[id] = foods
+      upsertMerchant(mapBusiness(businessVo.business, foods))
+      ownedIds.push(id)
+    }
+
+    replaceArray(state.ownedMerchantIds, ownedIds)
+    state.activeMerchantId = ownedIds.includes(state.activeMerchantId)
+      ? state.activeMerchantId
+      : ownedIds[0] ?? ''
+    persistSession()
+    return ownedIds.map((id) => getMerchant(id)).filter((merchant): merchant is Merchant => Boolean(merchant))
+  }, { clearOn401: true })
+}
+
 async function loadCart(query: { businessId?: string | number | null } = {}) {
   requireAuthUser()
   return withLoading('cart', async () => {
@@ -771,7 +798,10 @@ async function refreshProtectedData() {
     return
   }
 
-  const results = await Promise.allSettled([loadAddresses(), loadOrders(), loadCart()])
+  const tasks = state.user?.role === 1
+    ? [loadMyBusinesses(), loadOrders()]
+    : [loadAddresses(), loadOrders(), loadCart()]
+  const results = await Promise.allSettled(tasks)
   const failed = results.find((result): result is PromiseRejectedResult => result.status === 'rejected')
   if (failed && !state.error) {
     setError(failed.reason)
@@ -857,6 +887,9 @@ async function createBusiness(payload: BusinessSaveRequest) {
     state.foodsByMerchantId[String(businessVo.business.id)] = foods
     const merchant = upsertMerchant(mapBusiness(businessVo.business, foods))
     state.activeMerchantId = merchant.id
+    if (!state.ownedMerchantIds.includes(merchant.id)) {
+      state.ownedMerchantIds.push(merchant.id)
+    }
 
     if (state.user) {
       state.user.role = 1
@@ -1188,6 +1221,7 @@ export function useHungryStore() {
     initialize,
     loadTastes,
     loadBusinesses,
+    loadMyBusinesses,
     ensureMerchantDetail,
     loadCart,
     loadOrders,

@@ -17,6 +17,7 @@ const notice = ref('')
 const profileError = ref('')
 const profileSuccess = ref('')
 const profileSaving = ref(false)
+const avatarFileName = ref('')
 
 const profileForm = reactive({
   nickname: '',
@@ -66,6 +67,28 @@ function goOpenShop() {
 
 function comingSoon() {
   flashNotice('敬请期待')
+}
+
+function selectAvatar(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+
+  avatarFileName.value = file?.name ?? ''
+  if (!file) {
+    profileForm.avatar = ''
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = () => {
+    profileForm.avatar = typeof reader.result === 'string' ? reader.result : ''
+  }
+  reader.onerror = () => {
+    profileForm.avatar = ''
+    avatarFileName.value = ''
+    profileError.value = '头像读取失败，请重新选择'
+  }
+  reader.readAsDataURL(file)
 }
 
 function goLogin() {
@@ -186,8 +209,12 @@ async function logout() {
         <input v-model="profileForm.phone" class="field__control" type="tel" placeholder="请输入手机号" />
       </div>
       <div class="field">
-        <span class="field__label">头像地址</span>
-        <input v-model="profileForm.avatar" class="field__control" type="url" placeholder="留空使用默认头像" />
+        <span class="field__label">头像</span>
+        <div class="file-picker">
+          <label class="file-picker__button" for="profile-avatar">选择图片</label>
+          <span class="file-picker__name">{{ avatarFileName || '未选择新头像（保留当前头像）' }}</span>
+          <input id="profile-avatar" class="file-picker__input" type="file" accept="image/*" @change="selectAvatar" />
+        </div>
       </div>
       <div class="field">
         <span class="field__label">性别</span>
