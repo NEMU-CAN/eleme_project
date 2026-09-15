@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import UiIcon from '@/components/UiIcon.vue'
@@ -26,7 +26,9 @@ onMounted(async () => {
 })
 
 function goBack() {
-  router.push({ name: 'me' })
+ 
+    router.push('/me')//孩子们这个返回上一级死锁了
+ 
 }
 
 function addAddress() {
@@ -43,34 +45,45 @@ function choose(id: string) {
 </script>
 
 <template>
-  <div class="page page--bare ele-address-page">
-    <header class="ele-address-header">
-      <button @click="goBack"><UiIcon name="chevronLeft" :size="22" /></button>
-      <h1>我的收货地址</h1>
-      <span />
-    </header>
-    <main class="ele-address-list-wrap">
-      <p class="ele-address-list-title">选择收货地址</p>
-      <p v-if="error" class="ele-store-error">{{ error }}</p>
-      <div v-if="store.state.loading.addresses" class="ele-empty">正在加载地址…</div>
-      <section v-else-if="addresses.length" class="ele-address-list">
-        <button v-for="address in addresses" :key="address.id" class="ele-address-item" :class="{ active: address.id === activeId }" @click="choose(address.id)">
-          <i class="ele-address-radio"><UiIcon v-if="address.id === activeId" name="check" :size="12" /></i>
-          <div>
-            <h2>{{ address.detail || address.address }}</h2>
-            <p>{{ address.name }} {{ maskPhone(address.phone) }}</p>
-            <span v-if="address.id === activeId">当前选择</span>
-          </div>
-          <span class="ele-address-edit" @click.stop="editAddress(address.id)"><UiIcon name="edit" :size="18" /></span>
+  <div class="address-page">
+    <div style="position: sticky; top: 0; z-index: 40; background: var(--bg)">
+      <header class="site-header">
+        <button type="button" class="site-header__back" @click="goBack">
+          <UiIcon name="chevronLeft" :size="20" />
         </button>
-      </section>
-      <div v-else class="ele-address-empty">
-        <i><UiIcon name="pin" :size="34" /></i>
-        <b>还没有收货地址</b>
-        <span>添加地址后，下单配送会更方便</span>
-      </div>
-    </main>
-    <footer class="ele-address-footer"><button @click="addAddress"><UiIcon name="plus" :size="18" /> 新增收货地址</button></footer>
+        <h1 class="site-header__title" style="text-align: left">我的地址</h1>
+      </header>
+      <button type="button" class="address-add" @click="addAddress">
+        <UiIcon name="plus" :size="16" />
+        新增收货地址
+      </button>
+    </div>
+
+    <p v-if="error" class="auth-form__hint auth-form__hint--danger">{{ error }}</p>
+
+    <div v-if="store.state.loading.addresses" class="address-empty">正在加载地址…</div>
+
+    <div v-else-if="addresses.length" class="address-list">
+      <button
+        v-for="address in addresses"
+        :key="address.id"
+        type="button"
+        class="address-item"
+        @click="choose(address.id)"
+      >
+        <div class="address-item__top">
+          <div style="flex: 1; min-width: 0">
+            <p class="address-item__name">{{ address.detail || address.address }}</p>
+            <p class="address-item__contact">{{ address.name }} · {{ maskPhone(address.phone) }}</p>
+          </div>
+          <span class="address-item__edit" @click.stop="editAddress(address.id)">编辑</span>
+        </div>
+        <p v-if="address.id === activeId" class="address-item__active">
+          <UiIcon name="check" :size="12" /> 默认地址
+        </p>
+      </button>
+    </div>
+
+    <div v-else class="address-empty">还没有收货地址，点击上方按钮新增。</div>
   </div>
 </template>
-
