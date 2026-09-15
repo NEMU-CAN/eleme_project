@@ -60,6 +60,10 @@ function goAddress() {
   router.push('/addresses')
 }
 
+function goOpenShop() {
+  router.push('/open-shop')
+}
+
 function comingSoon() {
   flashNotice('敬请期待')
 }
@@ -147,6 +151,11 @@ async function logout() {
       <button type="button" class="me-row" @click="goAddress">
         <span class="me-row__icon"><UiIcon name="pin" :size="22" /></span>
         <span class="me-row__label">我的地址</span>
+        <UiIcon class="me-row__arrow" name="chevronRight" :size="16" />
+      </button>
+      <button type="button" class="me-row" @click="goOpenShop">
+        <span class="me-row__icon"><UiIcon name="store" :size="22" /></span>
+        <span class="me-row__label">我要开店</span>
         <UiIcon class="me-row__arrow" name="chevronRight" :size="16" />
       </button>
       <button type="button" class="me-row" @click="comingSoon">

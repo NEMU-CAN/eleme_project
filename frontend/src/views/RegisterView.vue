@@ -23,6 +23,29 @@ const form = reactive({
 
 const error = ref('')
 const loading = ref(false)
+const avatarFileName = ref('')
+
+function selectAvatar(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+
+  avatarFileName.value = file?.name ?? ''
+  if (!file) {
+    form.avatar = ''
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = () => {
+    form.avatar = typeof reader.result === 'string' ? reader.result : ''
+  }
+  reader.onerror = () => {
+    form.avatar = ''
+    avatarFileName.value = ''
+    error.value = '头像读取失败，请重新选择'
+  }
+  reader.readAsDataURL(file)
+}
 
 async function submit() {
   if (!form.phone.trim()) {
@@ -92,8 +115,12 @@ async function submit() {
         <input v-model="form.confirm" class="field__control" type="password" placeholder="再次输入密码" />
       </div>
       <div class="field">
-        <span class="field__label">头像地址</span>
-        <input v-model="form.avatar" class="field__control" type="url" placeholder="可留空使用默认头像" />
+        <span class="field__label">选择头像</span>
+        <div class="file-picker">
+          <label class="file-picker__button" for="register-avatar">选择图片</label>
+          <span class="file-picker__name">{{ avatarFileName || '未选择头像（使用默认头像）' }}</span>
+          <input id="register-avatar" class="file-picker__input" type="file" accept="image/*" @change="selectAvatar" />
+        </div>
       </div>
       <div class="field">
         <span class="field__label">性别</span>

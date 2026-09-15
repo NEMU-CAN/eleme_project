@@ -72,6 +72,12 @@ const router = createRouter({
       meta: { title: '编辑地址' },
     },
     {
+      path: '/open-shop',
+      name: 'open-shop',
+      component: () => import('@/views/OpenShopView.vue'),
+      meta: { title: '我要开店' },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
