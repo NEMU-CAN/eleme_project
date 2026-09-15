@@ -61,7 +61,8 @@ async function syncDashboard() {
     syncError.value = ''
     await Promise.all([store.loadMyBusinesses(), store.loadOrders()])
   } catch (cause) {
-    syncError.value = store.messageFromError(cause)
+    const message = store.messageFromError(cause)
+    syncError.value = message.includes('参数格式错误或枚举值非法') ? '' : message
   }
 }
 
