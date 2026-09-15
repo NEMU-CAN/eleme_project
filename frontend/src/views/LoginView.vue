@@ -9,7 +9,7 @@ const router = useRouter()
 const route = useRoute()
 const store = useHungryStore()
 
-const redirect = computed(() => (typeof route.query.redirect === 'string' ? route.query.redirect : '/me'))
+const redirect = computed(() => (typeof route.query.redirect === 'string' ? route.query.redirect : null))
 
 const form = reactive({
   phone: store.state.user?.phone ?? '',
@@ -31,8 +31,8 @@ async function submit() {
   try {
     loading.value = true
     error.value = ''
-    await store.login(form.phone.trim(), form.password)
-    router.push(redirect.value)
+    const user = await store.login(form.phone.trim(), form.password)
+    router.push(redirect.value ?? (user?.role === 1 ? '/merchant-center' : '/me'))
   } catch (cause) {
     error.value = store.messageFromError(cause)
   } finally {

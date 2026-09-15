@@ -13,6 +13,7 @@ import {
   type BackendUser,
   ApiError,
   type BusinessListQuery,
+  type BusinessSaveRequest,
   type DeliveryAddressSaveRequest,
   type OrderListQuery,
   type OrderStatusRequest,
@@ -847,6 +848,25 @@ async function updateCurrentUser(payload: UserUpdateRequest) {
   }, { clearOn401: true })
 }
 
+async function createBusiness(payload: BusinessSaveRequest) {
+  requireAuthUser()
+  return withLoading('merchant', async () => {
+    await ensureTastesLoaded().catch(() => undefined)
+    const businessVo = await elemeApi.createBusiness(payload)
+    const foods = businessVo.foods.map(mapFood)
+    state.foodsByMerchantId[String(businessVo.business.id)] = foods
+    const merchant = upsertMerchant(mapBusiness(businessVo.business, foods))
+    state.activeMerchantId = merchant.id
+
+    if (state.user) {
+      state.user.role = 1
+    }
+
+    persistSession()
+    return merchant
+  }, { clearOn401: true })
+}
+
 async function createAddress(payload: DeliveryAddressSaveRequest) {
   requireAuthUser()
   return withLoading('addresses', async () => {
@@ -1177,6 +1197,7 @@ export function useHungryStore() {
     register,
     logout,
     updateCurrentUser,
+    createBusiness,
     createAddress,
     updateAddress,
     removeAddress,
