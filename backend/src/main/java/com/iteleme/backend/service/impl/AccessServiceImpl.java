@@ -17,7 +17,7 @@ public class AccessServiceImpl implements AccessService {
 
     @Override
     public void ensureBusinessOwner(Integer businessId) {
-        Integer role = CurrentUserContext.role();
+        UserRole role = CurrentUserContext.role();
         if (role != UserRole.BUSINESS && role != UserRole.ADMIN) {
             throw new ForbiddenException("无权限操作");
         }

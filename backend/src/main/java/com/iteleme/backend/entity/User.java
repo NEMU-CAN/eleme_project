@@ -1,5 +1,7 @@
 package com.iteleme.backend.entity;
 
+import com.iteleme.backend.constant.GenderType;
+import com.iteleme.backend.constant.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,8 +15,8 @@ public class User {
     private String password;
     private String phone;
     private String avatar;
-    private Integer gender;
-    private Integer role;
+    private GenderType gender;
+    private UserRole role;
     private Integer status;
     private String currentTokenHash;
 }

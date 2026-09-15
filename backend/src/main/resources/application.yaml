@@ -18,6 +18,8 @@ mybatis:
     map-underscore-to-camel-case: true
     # 方便本地调试 SQL，正式环境可关闭
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 所有业务枚举继续以整数编码读写数据库
+    default-enum-type-handler: com.iteleme.backend.config.CodeEnumTypeHandler
 app:
   jwt:
     # JWT签名密钥（生产环境请修改为复杂的随机字符串）

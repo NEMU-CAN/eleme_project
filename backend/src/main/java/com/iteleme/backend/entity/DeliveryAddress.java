@@ -1,5 +1,6 @@
 package com.iteleme.backend.entity;
 
+import com.iteleme.backend.constant.GenderType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,6 @@ public class DeliveryAddress {
     private String address;
     private String contactName;
     private String contactTel;
-    private Integer contactGender;
+    private GenderType contactGender;
     private Integer isDeleted;
 }

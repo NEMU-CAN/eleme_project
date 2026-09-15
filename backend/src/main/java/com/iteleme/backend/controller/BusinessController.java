@@ -1,6 +1,7 @@
 package com.iteleme.backend.controller;
 
 import com.iteleme.backend.common.Result;
+import com.iteleme.backend.constant.BusinessStatus;
 import com.iteleme.backend.dto.BusinessSaveRequest;
 import com.iteleme.backend.dto.BusinessStatusRequest;
 import com.iteleme.backend.entity.Business;
@@ -32,7 +33,7 @@ public class BusinessController {
     @GetMapping
     public Result list(@RequestParam(required = false) Integer tasteId,
                        @RequestParam(name = "taste_id", required = false) Integer tasteIdSnake,
-                       @RequestParam(required = false) Integer status,
+                       @RequestParam(required = false) BusinessStatus status,
                        @RequestParam(required = false) String keyword) {
         Integer resolvedTasteId = RequestValues.first(tasteId, tasteIdSnake);
         List<Business> businesses = businessService.list(resolvedTasteId, status, keyword);

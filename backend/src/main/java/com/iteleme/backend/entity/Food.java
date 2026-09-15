@@ -1,5 +1,6 @@
 package com.iteleme.backend.entity;
 
+import com.iteleme.backend.constant.FoodStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,5 +19,5 @@ public class Food {
     private Integer businessId;
     private Integer stock;
     private Integer reservedStock;
-    private Integer status;
+    private FoodStatus status;
 }

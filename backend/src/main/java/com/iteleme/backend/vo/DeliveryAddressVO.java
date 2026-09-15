@@ -1,5 +1,6 @@
 package com.iteleme.backend.vo;
 
+import com.iteleme.backend.constant.GenderType;
 import com.iteleme.backend.entity.DeliveryAddress;
 
 public record DeliveryAddressVO(
@@ -8,7 +9,7 @@ public record DeliveryAddressVO(
         String address,
         String contactName,
         String contactTel,
-        Integer contactGender
+        GenderType contactGender
 ) {
     public static DeliveryAddressVO from(DeliveryAddress address) {
         return new DeliveryAddressVO(

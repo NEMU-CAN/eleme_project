@@ -2,6 +2,7 @@ package com.iteleme.backend.controller;
 
 import com.iteleme.backend.common.PageResult;
 import com.iteleme.backend.common.Result;
+import com.iteleme.backend.constant.OrderStatus;
 import com.iteleme.backend.dto.OrderCreateRequest;
 import com.iteleme.backend.dto.OrderStatusRequest;
 import com.iteleme.backend.service.OrderService;
@@ -35,14 +36,14 @@ public class OrderController {
     @GetMapping
     public Result list(@RequestParam(required = false) Integer businessId,
                        @RequestParam(name = "business_id", required = false) Integer businessIdSnake,
-                       @RequestParam(required = false) Integer orderStatus,
-                       @RequestParam(name = "order_status", required = false) Integer orderStatusSnake,
-                       @RequestParam(name = "orderState", required = false) Integer orderState,
+                       @RequestParam(required = false) OrderStatus orderStatus,
+                       @RequestParam(name = "order_status", required = false) OrderStatus orderStatusSnake,
+                       @RequestParam(name = "orderState", required = false) OrderStatus orderState,
                        @RequestParam(required = false, defaultValue = "1") Integer page,
                        @RequestParam(name = "page_size", required = false, defaultValue = "10") Integer pageSize,
                        @RequestParam(required = false) Integer pageSizeCamel) {
         Integer resolvedBusinessId = RequestValues.first(businessId, businessIdSnake);
-        Integer resolvedOrderStatus = RequestValues.first(RequestValues.first(orderStatus, orderStatusSnake), orderState);
+        OrderStatus resolvedOrderStatus = RequestValues.first(RequestValues.first(orderStatus, orderStatusSnake), orderState);
         Integer resolvedPageSize = RequestValues.first(pageSizeCamel, pageSize);
         PageResult<?> result = orderService.list(resolvedBusinessId, resolvedOrderStatus, page, resolvedPageSize);
         return Result.success(result);

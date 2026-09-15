@@ -1,4 +1,6 @@
 package com.iteleme.backend.context;
 
-public record LoginUser(Integer userId, Integer role, String token) {
+import com.iteleme.backend.constant.UserRole;
+
+public record LoginUser(Integer userId, UserRole role, String token) {
 }

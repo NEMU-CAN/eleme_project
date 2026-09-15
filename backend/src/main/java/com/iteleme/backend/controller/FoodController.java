@@ -1,6 +1,7 @@
 package com.iteleme.backend.controller;
 
 import com.iteleme.backend.common.Result;
+import com.iteleme.backend.constant.FoodStatus;
 import com.iteleme.backend.dto.FoodSaveRequest;
 import com.iteleme.backend.dto.FoodStatusRequest;
 import com.iteleme.backend.entity.Food;
@@ -32,7 +33,7 @@ public class FoodController {
     @GetMapping
     public Result list(@RequestParam(required = false) Integer businessId,
                        @RequestParam(name = "business_id", required = false) Integer businessIdSnake,
-                       @RequestParam(required = false) Integer status,
+                       @RequestParam(required = false) FoodStatus status,
                        @RequestParam(required = false) String keyword) {
         Integer resolvedBusinessId = RequestValues.first(businessId, businessIdSnake);
         List<Food> foods = foodService.list(resolvedBusinessId, status, keyword);

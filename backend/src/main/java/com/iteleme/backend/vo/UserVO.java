@@ -1,5 +1,7 @@
 package com.iteleme.backend.vo;
 
+import com.iteleme.backend.constant.GenderType;
+import com.iteleme.backend.constant.UserRole;
 import com.iteleme.backend.entity.User;
 
 public record UserVO(
@@ -7,8 +9,8 @@ public record UserVO(
         String nickname,
         String phone,
         String avatar,
-        Integer gender,
-        Integer role,
+        GenderType gender,
+        UserRole role,
         Integer status,
         String token
 ) {

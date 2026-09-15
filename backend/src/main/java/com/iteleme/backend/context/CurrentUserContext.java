@@ -1,5 +1,6 @@
 package com.iteleme.backend.context;
 
+import com.iteleme.backend.constant.UserRole;
 import com.iteleme.backend.exception.UnauthorizedException;
 
 public final class CurrentUserContext {
@@ -28,7 +29,7 @@ public final class CurrentUserContext {
         return require().userId();
     }
 
-    public static Integer role() {
+    public static UserRole role() {
         return require().role();
     }
 
