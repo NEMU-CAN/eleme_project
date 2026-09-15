@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import SiteHeader from '@/components/SiteHeader.vue'
+import { useHungryStore } from '@/composables/useHungryStore'
 import { categories } from '@/data/categories'
 
 const router = useRouter()
+const store = useHungryStore()
+const error = ref('')
+const submitting = ref(false)
 
 const form = reactive({
   name: '',
@@ -20,6 +24,55 @@ const form = reactive({
 function selectImage(event: Event) {
   const input = event.target as HTMLInputElement
   form.image = input.files?.[0] ?? null
+}
+
+function readImage(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('门店图片读取失败'))
+    reader.onerror = () => reject(new Error('门店图片读取失败'))
+    reader.readAsDataURL(file)
+  })
+}
+
+async function submit() {
+  if (!store.isAuthenticated.value) {
+    router.push({ path: '/login', query: { redirect: '/open-shop' } })
+    return
+  }
+  if (!form.name.trim()) {
+    error.value = '请输入门店名称'
+    return
+  }
+  if (!form.address.trim()) {
+    error.value = '请输入门店地址'
+    return
+  }
+  if (!form.tasteId) {
+    error.value = '请选择口味分类'
+    return
+  }
+
+  try {
+    submitting.value = true
+    error.value = ''
+    const image = form.image ? await readImage(form.image) : null
+    await store.createBusiness({
+      name: form.name.trim(),
+      address: form.address.trim(),
+      description: form.description.trim() || null,
+      image,
+      tasteId: Number(form.tasteId),
+      startPrice: form.startPrice,
+      deliveryPrice: form.deliveryPrice,
+      status: form.status,
+    })
+    router.push('/merchant-center')
+  } catch (cause) {
+    error.value = store.messageFromError(cause)
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -97,8 +150,12 @@ function selectImage(event: Event) {
 
     <p class="open-shop-warning">开店后，当前账号将变为商家账号，不能再用于点餐或购物车。</p>
 
+    <p v-if="error" class="auth-form__hint auth-form__hint--danger">{{ error }}</p>
+
     <div class="form-actions">
-      <button type="button" class="primary-button">提交入驻</button>
+      <button type="button" class="primary-button" :disabled="submitting" @click="submit">
+        {{ submitting ? '正在提交' : '提交入驻' }}
+      </button>
     </div>
   </div>
 </template>

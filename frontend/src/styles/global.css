@@ -1422,6 +1422,247 @@ button:disabled {
   line-height: 1.6;
 }
 
+/* ---------- 商家中心 ---------- */
+.merchant-center-page {
+  min-height: 100dvh;
+  width: min(100%, 430px);
+  margin: 0 auto;
+  padding-bottom: 24px;
+  background: #f4f7fb;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.06);
+}
+
+.merchant-center-header {
+  padding: 22px 18px 28px;
+  border-radius: 0 0 24px 24px;
+  color: #fff;
+  background: linear-gradient(145deg, #0089dc, #0874c9);
+}
+
+.merchant-center-header__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.merchant-center-header__eyebrow {
+  margin: 0 0 5px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+}
+
+.merchant-center-header h1 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.3;
+}
+
+.merchant-center-header__logout {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 14px;
+  color: #fff;
+  font-size: 12px;
+}
+
+.merchant-center-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.merchant-center-profile img {
+  width: 42px;
+  height: 42px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+
+.merchant-center-profile div {
+  min-width: 0;
+  flex: 1;
+}
+
+.merchant-center-profile strong {
+  font-size: 14px;
+}
+
+.merchant-center-profile p {
+  overflow: hidden;
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.merchant-center-profile__status {
+  padding: 5px 8px;
+  border-radius: 12px;
+  color: #0874c9;
+  background: #fff;
+  font-size: 11px;
+  flex: none;
+}
+
+.merchant-center-content {
+  padding: 4px 14px 0;
+}
+
+.merchant-center-section {
+  margin-top: 14px;
+}
+
+.merchant-center-section__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px 9px;
+}
+
+.merchant-center-section__heading h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.merchant-center-section__heading span {
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.merchant-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.merchant-overview-card {
+  padding: 15px;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.merchant-overview-card p {
+  margin: 0 0 8px;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.merchant-overview-card strong {
+  color: var(--text);
+  font-size: 23px;
+}
+
+.merchant-overview-card small {
+  margin-left: 4px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.merchant-module-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.merchant-module-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.merchant-module-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  flex: none;
+}
+
+.merchant-module-card__icon--blue {
+  color: var(--primary);
+  background: var(--primary-weak);
+}
+
+.merchant-module-card__icon--orange {
+  color: var(--accent);
+  background: rgba(255, 126, 0, 0.1);
+}
+
+.merchant-module-card__icon--green {
+  color: var(--success);
+  background: rgba(0, 168, 98, 0.1);
+}
+
+.merchant-module-card__icon--purple {
+  color: #7b61d1;
+  background: rgba(123, 97, 209, 0.1);
+}
+
+.merchant-module-card div {
+  min-width: 0;
+  flex: 1;
+}
+
+.merchant-module-card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.merchant-module-card p {
+  margin: 5px 0 0;
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.merchant-module-card__arrow {
+  color: var(--text-3);
+  flex: none;
+}
+
+.merchant-center-todo {
+  padding: 14px;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.merchant-center-todo .merchant-center-section__heading {
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.merchant-center-todo__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 25px 10px 12px;
+  color: var(--success);
+}
+
+.merchant-center-todo__empty p {
+  margin: 9px 0 0;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
 /* ---------- 订单 / 结算页通用 ---------- */
 .card {
   background: #fff;
