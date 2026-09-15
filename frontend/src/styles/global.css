@@ -997,6 +997,7 @@ button:disabled {
 
 /* ---------- 我的页 ---------- */
 .me-header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -1031,6 +1032,14 @@ button:disabled {
 }
 
 .me-header__login {
+  /* 未登录时铺满整条蓝色横条，整块区域都可点击 */
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 16px 0 90px;
+  text-align: left;
   color: #fff;
   font-size: 15px;
   font-weight: 600;
