@@ -1091,9 +1091,12 @@ button:disabled {
 
 .me-row {
   display: flex;
+  width: 100%;
   align-items: center;
+  justify-content: flex-start;
   gap: 12px;
   padding: 14px;
+  text-align: left;
   border-bottom: 1px solid var(--line);
 }
 
@@ -1112,7 +1115,7 @@ button:disabled {
 }
 
 .me-row__label {
-  flex: 1;
+  flex: none;
   font-size: 15px;
   color: var(--text);
 }
@@ -1122,6 +1125,7 @@ button:disabled {
 }
 
 .me-row--danger .me-row__label {
+  flex: 1;
   color: var(--danger);
 }
 
