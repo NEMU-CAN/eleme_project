@@ -697,9 +697,11 @@ async function ensureMerchantDetail(merchantId: string | number) {
     await ensureTastesLoaded().catch(() => undefined)
     const [businessVo, foods] = await Promise.all([
       elemeApi.getBusiness(id),
-      elemeApi.listFoods({ businessId: id, status: 1 }),
+      elemeApi.listFoods({ businessId: id }),
     ])
-    const mappedFoods = foods.map(mapFood)
+    // 只显示上架的商品 (status === 1 表示上架)
+    const onlineFoods = foods.filter(food => food.status === 1)
+    const mappedFoods = onlineFoods.map(mapFood)
     state.foodsByMerchantId[String(id)] = mappedFoods
     const merchant = upsertMerchant(mapBusiness(businessVo.business, mappedFoods))
     state.activeMerchantId = merchant.id

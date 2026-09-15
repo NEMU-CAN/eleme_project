@@ -31,14 +31,31 @@ public class UserServiceImpl implements UserService {
     private final TokenInvalidator tokenInvalidator;
 
     /**
-     * 注册新用户。
+     * 注册新用户；如果手机号对应的账户已删除（status = -1），则恢复该账户。
      */
     @Override
     @Transactional
     public UserVO register(UserCreateRequest request) {
-        if (userMapper.findByPhone(request.phone()) != null) {
+        User existingUser = userMapper.findByPhone(request.phone());
+        
+        // 如果找到已删除的账户，恢复它
+        if (existingUser != null && existingUser.getStatus() == -1) {
+            existingUser.setStatus(0);
+            existingUser.setPassword(request.password());
+            existingUser.setNickname(request.nickname());
+            existingUser.setAvatar(request.avatar());
+            existingUser.setGender(request.gender());
+            existingUser.setCurrentTokenHash(null);
+            userMapper.update(existingUser);
+            return UserVO.from(existingUser);
+        }
+        
+        // 如果手机号已被正常账户占用，拒绝注册
+        if (existingUser != null) {
             throw new ConflictException("手机号已存在", java.util.List.of(new FieldErrorVO("phone", "手机号已存在")));
         }
+        
+        // 创建新用户
         User user = new User(
                 userMapper.nextId(),
                 request.nickname(),
