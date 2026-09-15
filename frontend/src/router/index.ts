@@ -15,9 +15,7 @@ const router = createRouter({
     },
     {
       path: '/businesses',
-      name: 'businesses',
-      component: () => import('@/views/BusinessListView.vue'),
-      meta: { title: '附近商家' },
+      redirect: (to) => ({ path: '/', query: to.query }),
     },
     {
       path: '/merchant/:merchantId',

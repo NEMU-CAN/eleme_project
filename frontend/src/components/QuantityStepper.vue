@@ -7,10 +7,14 @@ const props = withDefaults(
     quantity: number
     size?: 'small' | 'regular'
     disabled?: boolean
+    canAdd?: boolean
+    canRemove?: boolean
   }>(),
   {
     size: 'regular',
     disabled: false,
+    canAdd: true,
+    canRemove: true,
   },
 )
 
@@ -26,16 +30,16 @@ const emit = defineEmits<{
       v-if="quantity > 0"
       type="button"
       class="quantity-stepper__button"
-      :disabled="props.disabled"
+      :disabled="props.disabled || !props.canRemove"
       @click="emit('remove')"
     >
-      <UiIcon name="minus" :size="14" :stroke-width="2.8" />
+      <UiIcon name="minus" :size="14" />
     </button>
     <span v-if="quantity > 0" class="quantity-stepper__value">{{ quantity }}</span>
     <button
       type="button"
       class="quantity-stepper__button quantity-stepper__button--primary"
-      :disabled="props.disabled"
+      :disabled="props.disabled || !props.canAdd"
       @click="emit('add')"
     >
       <UiIcon name="plus" :size="14" />

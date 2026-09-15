@@ -1,43 +1,64 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import SiteHeader from '@/components/SiteHeader.vue'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
-import { formatCny, formatOrderTime } from '@/utils/format'
-import type { OrderRecord, PaymentMethod } from '@/types'
+import { formatCny, formatOrderStatus, formatOrderTime } from '@/utils/format'
+import type { PaymentMethod } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const store = useHungryStore()
 const error = ref('')
-const expanded = ref(false)
 
-const orderIds = computed(() => {
-  const batch = String(route.query.batch || '').split(',').filter(Boolean)
-  return [...new Set([String(route.params.orderId || ''), ...batch].filter(Boolean))]
+const orderId = computed(() => String(route.params.orderId || ''))
+const order = computed(() => store.getOrder(orderId.value))
+const expanded = ref(true)
+const selectedMethod = computed<PaymentMethod>({
+  get() {
+    return store.state.paymentMethod
+  },
+  set(value) {
+    store.setPaymentMethod(value)
+  },
 })
-const orders = computed(() => orderIds.value.map((id) => store.getOrder(id)).filter((item): item is OrderRecord => Boolean(item)))
-const order = computed(() => orders.value[0] ?? null)
-const totalAmount = computed(() => orders.value.reduce((sum, item) => sum + item.total, 0))
-const totalItems = computed(() => orders.value.reduce((sum, item) => sum + item.itemCount, 0))
-const selectedMethod = computed<PaymentMethod>({ get: () => store.state.paymentMethod, set: (value) => store.setPaymentMethod(value) })
 const isPaying = computed(() => store.state.loading.action)
 
 onMounted(async () => {
-  if (!store.isAuthenticated.value) return void router.replace({ path: '/login', query: { redirect: route.fullPath } })
+  if (!store.isAuthenticated.value) {
+    router.replace({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
   try {
     error.value = ''
-    await Promise.all(orderIds.value.map((id) => store.fetchOrder(id)))
+    await store.fetchOrder(orderId.value)
   } catch (cause) {
     error.value = store.messageFromError(cause)
   }
 })
 
+function statusClass(status: string) {
+  if (status === 'canceled') {
+    return 'status-pill status-pill--danger'
+  }
+  if (status === 'paid' || status === 'completed') {
+    return 'status-pill status-pill--success'
+  }
+  return 'status-pill status-pill--warning'
+}
+
 async function confirmPayment() {
-  if (!orders.value.length) return
+  if (!order.value) {
+    return
+  }
+  if (order.value.status !== 'unpaid') {
+    router.push('/orders')
+    return
+  }
   try {
     error.value = ''
-    for (const item of orders.value) if (item.status === 'unpaid') await store.confirmPayment(item.id, selectedMethod.value)
+    await store.confirmPayment(order.value.id, selectedMethod.value)
     router.push('/orders')
   } catch (cause) {
     error.value = store.messageFromError(cause)
@@ -45,52 +66,96 @@ async function confirmPayment() {
 }
 
 function back() {
-  router.push('/cart')
+  if (order.value) {
+    router.push(`/checkout/${order.value.id}`)
+    return
+  }
+  router.push('/orders')
 }
 </script>
 
 <template>
-  <div class="page page--bare ele-pay-page">
-    <header class="ele-pay-header"><button @click="back"><UiIcon name="chevronLeft" :size="22" /></button><h1>确认支付</h1><span /></header>
+  <div class="page page--bare" style="background: var(--bg)">
+    <SiteHeader title="在线支付" backable @back="back" />
 
-    <template v-if="orders.length">
-      <section class="ele-pay-hero">
-        <p>{{ orders.length > 1 ? `${orders.length}笔订单合并支付` : '订单支付金额' }}</p>
-        <strong>{{ formatCny(totalAmount) }}</strong>
-        <span>请在 15 分钟内完成支付</span>
+    <template v-if="order">
+      <!-- 订单金额 -->
+      <section class="card" style="text-align: center">
+        <p class="card__sub">订单金额</p>
+        <p style="margin: 8px 0 0; font-size: 32px; font-weight: 700; color: var(--text)">{{ formatCny(order.total) }}</p>
+        <p class="card__sub" style="margin-top: 6px">{{ order.merchantName }} · {{ formatOrderTime(order.createdAt) }}</p>
       </section>
 
-      <main class="ele-pay-content">
-        <section class="ele-pay-order-card">
-          <button class="ele-pay-order-card__summary" @click="expanded = !expanded">
-            <div><b>{{ orders.length > 1 ? `${orders.length}家商户` : order?.merchantName }}</b><span>共 {{ totalItems }} 件商品</span></div>
-            <UiIcon :name="expanded ? 'chevronDown' : 'chevronRight'" :size="18" />
-          </button>
-          <div v-if="expanded" class="ele-pay-details">
-            <template v-for="entry in orders" :key="entry.id">
-              <div class="ele-pay-details__merchant"><b>{{ entry.merchantName }}</b><small>{{ formatOrderTime(entry.createdAt) }}</small></div>
-              <div v-for="item in entry.items" :key="`${entry.id}-${item.id}`" class="ele-pay-details__line"><span>{{ item.name }} × {{ item.quantity }}</span><b>{{ formatCny(item.price * item.quantity) }}</b></div>
-              <div class="ele-pay-details__line"><span>配送费</span><b>{{ formatCny(entry.deliveryFee) }}</b></div>
-            </template>
+      <!-- 明细（可折叠） -->
+      <section class="card">
+        <button type="button" style="display: flex; align-items: center; justify-content: space-between; width: 100%" @click="expanded = !expanded">
+          <span style="font-size: 14px; color: var(--text-2)">{{ expanded ? '收起明细' : '展开明细' }}</span>
+          <UiIcon :name="expanded ? 'chevronDown' : 'chevronRight'" :size="18" style="color: var(--text-3)" />
+        </button>
+        <transition name="fade">
+          <div v-if="expanded" style="margin-top: 8px">
+            <div v-for="item in order.items" :key="item.id" class="row-line">
+              <span>{{ item.name }} x {{ item.quantity }}</span>
+              <span>{{ formatCny(item.price * item.quantity) }}</span>
+            </div>
+            <div class="row-line">
+              <span>配送费</span>
+              <span>{{ formatCny(order.deliveryFee) }}</span>
+            </div>
           </div>
-        </section>
+        </transition>
+      </section>
 
-        <section class="ele-pay-methods">
-          <h2>支付方式</h2>
-          <button :class="{ active: selectedMethod === 'alipay' }" @click="selectedMethod = 'alipay'">
-            <img src="/eleme/alipay.png" alt="支付宝" /><div><b>支付宝</b><span>推荐使用支付宝安全支付</span></div><i><UiIcon v-if="selectedMethod === 'alipay'" name="check" :size="13" /></i>
+      <!-- 支付方式 -->
+      <section class="card">
+        <p class="card__title">选择支付方式</p>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px">
+          <button
+            type="button"
+            class="pay-method"
+            :class="{ 'pay-method--active': selectedMethod === 'alipay' }"
+            @click="selectedMethod = 'alipay'"
+          >
+            <img class="pay-method__icon" src="/eleme/alipay.png" alt="支付宝" />
+            <div class="pay-method__info">
+              <p class="pay-method__name">支付宝</p>
+              <p class="pay-method__sub">提交后调用后端支付接口</p>
+            </div>
+            <span v-if="selectedMethod === 'alipay'" class="status-pill status-pill--success">
+              <UiIcon name="check" :size="14" />
+            </span>
           </button>
-          <button :class="{ active: selectedMethod === 'wechat' }" @click="selectedMethod = 'wechat'">
-            <img src="/eleme/wechat.png" alt="微信支付" /><div><b>微信支付</b><span>亿万用户的安全选择</span></div><i><UiIcon v-if="selectedMethod === 'wechat'" name="check" :size="13" /></i>
+          <button
+            type="button"
+            class="pay-method"
+            :class="{ 'pay-method--active': selectedMethod === 'wechat' }"
+            @click="selectedMethod = 'wechat'"
+          >
+            <img class="pay-method__icon" src="/eleme/wechat.png" alt="微信支付" />
+            <div class="pay-method__info">
+              <p class="pay-method__name">微信支付</p>
+              <p class="pay-method__sub">扫码和快捷支付都可展示</p>
+            </div>
+            <span v-if="selectedMethod === 'wechat'" class="status-pill status-pill--success">
+              <UiIcon name="check" :size="14" />
+            </span>
           </button>
-        </section>
-        <p class="ele-pay-security"><UiIcon name="check" :size="13" /> 支付信息已加密保护</p>
-        <p v-if="error" class="ele-store-error">{{ error }}</p>
-      </main>
+        </div>
+      </section>
 
-      <footer class="ele-pay-footer"><button :disabled="isPaying" @click="confirmPayment">{{ isPaying ? '支付处理中…' : `确认支付 ${formatCny(totalAmount)}` }}</button></footer>
+      <p v-if="error" class="auth-form__hint auth-form__hint--danger">{{ error }}</p>
+
+      <div class="form-actions">
+        <button type="button" class="primary-button primary-button--accent" :disabled="isPaying" @click="confirmPayment">
+          {{ isPaying ? '支付处理中' : order.status === 'unpaid' ? `确认支付 ${formatCny(order.total)}` : '返回订单列表' }}
+        </button>
+      </div>
     </template>
 
-    <section v-else class="ele-empty"><div><b>没有找到待支付订单</b><p>{{ error || '请返回订单列表重新查看' }}</p><button class="primary-button" @click="router.push('/orders')">去订单列表</button></div></section>
+    <section v-else class="empty-state">
+      <p class="empty-state__title">没有找到该订单</p>
+      <p class="empty-state__text">{{ error || '订单可能已完成支付或不存在，请回订单列表查看。' }}</p>
+      <button type="button" class="primary-button" style="margin-top: 16px" @click="router.push('/orders')">去订单列表</button>
+    </section>
   </div>
 </template>
