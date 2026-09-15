@@ -1,6 +1,8 @@
 package com.iteleme.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.iteleme.backend.constant.GenderType;
+import com.iteleme.backend.constant.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,7 +24,7 @@ public class Orders {
     private String businessAddress;
     private String receiverName;
     private String receiverTel;
-    private Integer receiverGender;
+    private GenderType receiverGender;
     private String receiverAddress;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -32,5 +34,5 @@ public class Orders {
     private BigDecimal totalAmount;
     private BigDecimal actualAmount;
     private Integer deliveryAddressId;
-    private Integer orderStatus;
+    private OrderStatus orderStatus;
 }

@@ -27,7 +27,7 @@ public class FoodServiceImpl implements FoodService {
     private final AccessService accessService;
 
     @Override
-    public List<Food> list(Integer businessId, Integer status, String keyword) {
+    public List<Food> list(Integer businessId, FoodStatus status, String keyword) {
         return foodMapper.list(businessId, status, keyword);
     }
 
@@ -86,9 +86,6 @@ public class FoodServiceImpl implements FoodService {
     public void status(Integer id, FoodStatusRequest request) {
         Food food = loadFood(id);
         accessService.ensureBusinessOwner(food.getBusinessId());
-        if (request.status() != FoodStatus.OFFLINE && request.status() != FoodStatus.ONLINE) {
-            throw new BadRequestException("非法商品状态");
-        }
         foodMapper.updateStatus(id, request.status());
     }
 

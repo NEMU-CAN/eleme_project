@@ -123,8 +123,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public PageResult<OrderSummaryVO> list(Integer businessId, Integer orderStatus, int page, int pageSize) {
-        validateOrderStatus(orderStatus);
+    public PageResult<OrderSummaryVO> list(Integer businessId, OrderStatus orderStatus, int page, int pageSize) {
         if (page < 1) {
             page = 1;
         }
@@ -177,8 +176,7 @@ public class OrderServiceImpl implements OrderService {
     public void status(Integer id, OrderStatusRequest request) {
         Orders order = loadOrder(id);
         ensureReadable(order);
-        Integer targetStatus = request.orderStatus();
-        validateStatusValue(targetStatus);
+        OrderStatus targetStatus = request.orderStatus();
         ensureStatusTransitionAllowed(order, targetStatus);
         if (Objects.equals(order.getOrderStatus(), targetStatus)) {
             throw new BadRequestException("订单状态未发生变化");
@@ -211,7 +209,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void ensureReadable(Orders order) {
-        Integer role = CurrentUserContext.role();
+        UserRole role = CurrentUserContext.role();
         if (role == UserRole.ADMIN) {
             return;
         }
@@ -283,30 +281,8 @@ public class OrderServiceImpl implements OrderService {
         return new OrderSummaryVO(order, business, addressVO, details == null ? 0 : details.size());
     }
 
-    private void validateOrderStatus(Integer orderStatus) {
-        if (orderStatus == null) {
-            return;
-        }
-        if (orderStatus != OrderStatus.CANCELED
-                && orderStatus != OrderStatus.UNPAID
-                && orderStatus != OrderStatus.PAID
-                && orderStatus != OrderStatus.COMPLETED) {
-            throw new BadRequestException("非法订单状态");
-        }
-    }
-
-    private void validateStatusValue(Integer orderStatus) {
-        if (orderStatus == null
-                || (orderStatus != OrderStatus.CANCELED
-                && orderStatus != OrderStatus.UNPAID
-                && orderStatus != OrderStatus.PAID
-                && orderStatus != OrderStatus.COMPLETED)) {
-            throw new BadRequestException("非法订单状态");
-        }
-    }
-
-    private void ensureStatusTransitionAllowed(Orders order, Integer targetStatus) {
-        Integer role = CurrentUserContext.role();
+    private void ensureStatusTransitionAllowed(Orders order, OrderStatus targetStatus) {
+        UserRole role = CurrentUserContext.role();
         if (role == UserRole.CUSTOMER) {
             if (!order.getUserId().equals(CurrentUserContext.userId())) {
                 throw new ForbiddenException("无权修改订单");
@@ -330,7 +306,7 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private void validateLifecycleTransition(Orders order, Integer targetStatus) {
+    private void validateLifecycleTransition(Orders order, OrderStatus targetStatus) {
         if (order.getOrderStatus() == OrderStatus.UNPAID
                 && (targetStatus == OrderStatus.PAID || targetStatus == OrderStatus.CANCELED)) {
             return;

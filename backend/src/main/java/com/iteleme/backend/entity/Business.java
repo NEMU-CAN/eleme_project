@@ -1,5 +1,6 @@
 package com.iteleme.backend.entity;
 
+import com.iteleme.backend.constant.BusinessStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,5 +19,5 @@ public class Business {
     private Integer tasteId;
     private BigDecimal startPrice;
     private BigDecimal deliveryPrice;
-    private Integer status;
+    private BusinessStatus status;
 }

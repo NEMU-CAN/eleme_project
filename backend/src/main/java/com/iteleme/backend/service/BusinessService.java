@@ -1,5 +1,6 @@
 package com.iteleme.backend.service;
 
+import com.iteleme.backend.constant.BusinessStatus;
 import com.iteleme.backend.dto.BusinessSaveRequest;
 import com.iteleme.backend.dto.BusinessStatusRequest;
 import com.iteleme.backend.entity.Business;
@@ -8,7 +9,7 @@ import com.iteleme.backend.vo.BusinessVO;
 import java.util.List;
 
 public interface BusinessService {
-    List<Business> list(Integer tasteId, Integer status, String keyword);
+    List<Business> list(Integer tasteId, BusinessStatus status, String keyword);
 
     BusinessVO get(Integer id);
 

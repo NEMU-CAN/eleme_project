@@ -1,5 +1,6 @@
 package com.iteleme.backend.dto;
 
+import com.iteleme.backend.constant.FoodStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -13,6 +14,6 @@ public record FoodSaveRequest(
         @NotNull(message = "菜品价格不能为空") BigDecimal price,
         @NotNull(message = "商家ID不能为空") Integer businessId,
         @jakarta.validation.constraints.Min(value = 0, message = "库存不能小于0") Integer stock,
-        Integer status
+        FoodStatus status
 ) {
 }

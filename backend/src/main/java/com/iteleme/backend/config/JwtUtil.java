@@ -3,6 +3,7 @@ package com.iteleme.backend.config;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
+import com.iteleme.backend.constant.UserRole;
 import com.iteleme.backend.context.LoginUser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -57,7 +58,7 @@ public class JwtUtil {
      * @return JWT token
      */
     public String create(Integer userId) {
-        return create(userId, 0);
+        return create(userId, UserRole.CUSTOMER);
     }
 
     /**
@@ -67,7 +68,7 @@ public class JwtUtil {
      * @param role 角色（0=普通用户, 1=商家, 2=管理员）
      * @return JWT token
      */
-    public String create(Integer userId, Integer role) {
+    public String create(Integer userId, UserRole role) {
         try {
             long now = System.currentTimeMillis();
             long iat = now / 1000L;
@@ -76,7 +77,7 @@ public class JwtUtil {
             // 使用Jackson生成payload JSON
             ObjectNode payload = MAPPER.createObjectNode();
             payload.put("sub", userId);
-            payload.put("role", role);
+            payload.put("role", role.getCode());
             payload.put("iat", iat);
             payload.put("exp", exp);
             payload.put("jti", UUID.randomUUID().toString());
@@ -151,7 +152,7 @@ public class JwtUtil {
                 throw new SecurityException("token缺少userId");
             }
 
-            Integer role = payload.path("role").asInt(0);
+            UserRole role = UserRole.fromCode(payload.path("role").asInt(UserRole.CUSTOMER.getCode()));
 
             // 4. 过期检查
             long exp = payload.path("exp").asLong(0);

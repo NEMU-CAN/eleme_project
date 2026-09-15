@@ -10,7 +10,6 @@ import com.iteleme.backend.entity.Business;
 import com.iteleme.backend.entity.BusinessAdmin;
 import com.iteleme.backend.entity.Taste;
 import com.iteleme.backend.entity.User;
-import com.iteleme.backend.exception.BadRequestException;
 import com.iteleme.backend.exception.ForbiddenException;
 import com.iteleme.backend.exception.NotFoundException;
 import com.iteleme.backend.mapper.BusinessAdminMapper;
@@ -39,7 +38,7 @@ public class BusinessServiceImpl implements BusinessService {
     private final AccessService accessService;
 
     @Override
-    public List<Business> list(Integer tasteId, Integer status, String keyword) {
+    public List<Business> list(Integer tasteId, BusinessStatus status, String keyword) {
         return businessMapper.list(tasteId, status, keyword);
     }
 
@@ -106,11 +105,6 @@ public class BusinessServiceImpl implements BusinessService {
     public void status(Integer id, BusinessStatusRequest request) {
         Business business = loadBusiness(id);
         accessService.ensureBusinessOwner(id);
-        if (request.status() != BusinessStatus.CLOSED
-                && request.status() != BusinessStatus.OPEN
-                && request.status() != BusinessStatus.DELETED) {
-            throw new BadRequestException("非法商家状态");
-        }
         businessMapper.updateStatus(business.getId(), request.status());
     }
 

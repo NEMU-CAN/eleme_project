@@ -1,5 +1,6 @@
 package com.iteleme.backend.dto;
 
+import com.iteleme.backend.constant.BusinessStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -14,6 +15,6 @@ public record BusinessSaveRequest(
         @NotNull(message = "口味分类不能为空") Integer tasteId,
         BigDecimal startPrice,
         BigDecimal deliveryPrice,
-        Integer status
+        BusinessStatus status
 ) {
 }
