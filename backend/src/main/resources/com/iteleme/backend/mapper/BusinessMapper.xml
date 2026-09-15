@@ -27,6 +27,15 @@
         order by `id` desc
     </select>
 
+    <select id="listByUserId" resultType="com.iteleme.backend.entity.Business">
+        select b.*
+        from `business` b
+        inner join `business_admin` ba on ba.`business_id` = b.`id`
+        where ba.`user_id` = #{userId}
+          and b.`status` &lt;&gt; -1
+        order by b.`id`
+    </select>
+
     <select id="findById" resultType="com.iteleme.backend.entity.Business">
         select * from `business` where `id` = #{id} limit 1
     </select>

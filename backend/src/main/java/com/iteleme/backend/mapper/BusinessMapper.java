@@ -11,6 +11,8 @@ public interface BusinessMapper {
                         @Param("status") BusinessStatus status,
                         @Param("keyword") String keyword);
 
+    List<Business> listByUserId(@Param("userId") Integer userId);
+
     Business findById(@Param("id") Integer id);
 
     int insert(Business business);

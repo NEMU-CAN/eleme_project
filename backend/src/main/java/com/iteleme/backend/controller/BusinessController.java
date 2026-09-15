@@ -40,6 +40,11 @@ public class BusinessController {
         return Result.success(businesses);
     }
 
+    @GetMapping("/mine")
+    public Result mine() {
+        return Result.success(businessService.mine());
+    }
+
     @GetMapping("/{id}")
     public Result get(@PathVariable Integer id) {
         return Result.success(businessService.get(id));

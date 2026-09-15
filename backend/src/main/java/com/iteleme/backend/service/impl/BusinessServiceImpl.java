@@ -43,6 +43,16 @@ public class BusinessServiceImpl implements BusinessService {
     }
 
     @Override
+    public List<BusinessVO> mine() {
+        return businessMapper.listByUserId(CurrentUserContext.userId()).stream()
+                .map(business -> new BusinessVO(
+                        business,
+                        foodMapper.list(business.getId(), FoodStatus.ONLINE, null)
+                ))
+                .toList();
+    }
+
+    @Override
     public BusinessVO get(Integer id) {
         Business business = loadBusiness(id);
         return new BusinessVO(business, foodMapper.list(id, FoodStatus.ONLINE, null));
