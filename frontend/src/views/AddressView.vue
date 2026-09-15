@@ -26,11 +26,7 @@ onMounted(async () => {
 })
 
 function goBack() {
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    router.push('/me')
-  }
+  router.push({ name: 'me' })
 }
 
 function addAddress() {
