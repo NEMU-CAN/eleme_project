@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
@@ -8,6 +8,8 @@ const router = useRouter()
 const store = useHungryStore()
 const user = computed(() => store.state.user)
 const merchant = computed(() => store.state.activeMerchantId ? store.getMerchant(store.state.activeMerchantId) : null)
+const syncError = ref('')
+const syncing = computed(() => store.state.loading.businesses || store.state.loading.orders)
 const merchantStatus = computed(() => {
   if (!merchant.value) {
     return '状态待同步'
@@ -15,12 +17,32 @@ const merchantStatus = computed(() => {
   return merchant.value.status === 'open' ? '营业中' : '休息中'
 })
 
-const overview = [
-  { label: '今日订单', value: '--', unit: '单' },
-  { label: '待处理', value: '--', unit: '单' },
-  { label: '今日营业额', value: '--', unit: '元' },
-  { label: '在售商品', value: '--', unit: '件' },
-]
+const merchantOrders = computed(() => {
+  const businessId = merchant.value?.id
+  return businessId
+    ? store.state.orders.filter((order) => order.businessId === businessId)
+    : store.state.orders
+})
+const today = computed(() => {
+  const date = new Date()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+})
+const todayOrders = computed(() => merchantOrders.value.filter((order) => order.createdAt.slice(0, 10) === today.value))
+const pendingOrders = computed(() => merchantOrders.value.filter((order) => order.status === 'paid'))
+const todayRevenue = computed(() => todayOrders.value
+  .filter((order) => order.status === 'completed')
+  .reduce((total, order) => total + order.total, 0))
+const onlineFoodCount = computed(() => merchant.value?.menuSections
+  .flatMap((section) => section.items)
+  .filter((food) => food.status === 'online').length ?? 0)
+const overview = computed(() => [
+  { label: '今日订单', value: String(todayOrders.value.length), unit: '单' },
+  { label: '待处理', value: String(pendingOrders.value.length), unit: '单' },
+  { label: '今日营业额', value: todayRevenue.value.toFixed(2), unit: '元' },
+  { label: '在售商品', value: String(onlineFoodCount.value), unit: '件' },
+])
 
 const modules = [
   { title: '店铺管理', description: '门店资料、营业状态与配送设置', icon: 'store', tone: 'blue' },
@@ -29,10 +51,28 @@ const modules = [
   { title: '经营概览', description: '订单趋势、收入和经营数据', icon: 'invoice', tone: 'purple' },
 ]
 
+async function syncDashboard() {
+  if (!store.isAuthenticated.value) {
+    router.replace({ path: '/login', query: { redirect: '/merchant-center' } })
+    return
+  }
+
+  try {
+    syncError.value = ''
+    await Promise.all([store.loadMyBusinesses(), store.loadOrders()])
+  } catch (cause) {
+    syncError.value = store.messageFromError(cause)
+  }
+}
+
 async function logout() {
   await store.logout()
   router.push('/login')
 }
+
+onMounted(() => {
+  void syncDashboard()
+})
 </script>
 
 <template>
@@ -43,7 +83,10 @@ async function logout() {
           <p class="merchant-center-header__eyebrow">饿了么商家中心</p>
           <h1>{{ merchant?.name || '我的门店' }}</h1>
         </div>
-        <button type="button" class="merchant-center-header__logout" @click="logout">退出</button>
+        <div class="merchant-center-header__actions">
+          <button type="button" :disabled="syncing" @click="syncDashboard">{{ syncing ? '同步中' : '刷新' }}</button>
+          <button type="button" @click="logout">退出</button>
+        </div>
       </div>
       <div class="merchant-center-profile">
         <img :src="user?.avatar || '/eleme/userImg/userImg.png'" :alt="user?.name || '商家头像'" />
@@ -56,10 +99,12 @@ async function logout() {
     </header>
 
     <main class="merchant-center-content">
+      <p v-if="syncError" class="merchant-center-error">{{ syncError }}</p>
+
       <section class="merchant-center-section">
         <div class="merchant-center-section__heading">
           <h2>今日概览</h2>
-          <span>数据模块预览</span>
+          <span>{{ store.state.ownedMerchantIds.length }} 家门店</span>
         </div>
         <div class="merchant-overview-grid">
           <article v-for="item in overview" :key="item.label" class="merchant-overview-card">
@@ -91,11 +136,11 @@ async function logout() {
       <section class="merchant-center-section merchant-center-todo">
         <div class="merchant-center-section__heading">
           <h2>待办事项</h2>
-          <span>0 项待处理</span>
+          <span>{{ pendingOrders.length }} 项待处理</span>
         </div>
         <div class="merchant-center-todo__empty">
           <UiIcon name="check" :size="30" />
-          <p>暂无待办，门店一切正常</p>
+          <p>{{ pendingOrders.length ? `有 ${pendingOrders.length} 个已支付订单等待处理` : '暂无待办，门店一切正常' }}</p>
         </div>
       </section>
     </main>

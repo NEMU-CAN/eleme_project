@@ -68,7 +68,7 @@ public class JwtInterceptor implements HandlerInterceptor {
         }
         return ("POST".equalsIgnoreCase(method) && "/users".equals(path))
                 || ("POST".equalsIgnoreCase(method) && "/login".equals(path))
-                || ("GET".equalsIgnoreCase(method) && (path.equals("/businesses") || path.startsWith("/businesses/")
-                || path.equals("/foods") || path.startsWith("/foods/") || path.equals("/tastes")));
+                || ("GET".equalsIgnoreCase(method) && (path.equals("/businesses") || path.matches("/businesses/\\d+")
+                || path.equals("/foods") || path.matches("/foods/\\d+") || path.equals("/tastes")));
     }
 }

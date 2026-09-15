@@ -11,6 +11,8 @@ import java.util.List;
 public interface BusinessService {
     List<Business> list(Integer tasteId, BusinessStatus status, String keyword);
 
+    List<BusinessVO> mine();
+
     BusinessVO get(Integer id);
 
     BusinessVO create(BusinessSaveRequest request);
