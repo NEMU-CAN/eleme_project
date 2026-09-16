@@ -75,17 +75,14 @@ function stockLabel(itemId: string) {
   if (!item) {
     return ''
   }
-  if (item.status !== 'online') {
-    return '已下架'
-  }
   const available = availableStockFor(itemId)
+  if (item.status !== 'online') {
+    return `已下架 · 剩余 ${available} 件`
+  }
   if (available <= 0) {
-    return '已售罄'
+    return '已售罄 · 剩余 0 件'
   }
-  if (available <= 3) {
-    return `仅剩 ${available} 份`
-  }
-  return ''
+  return `剩余 ${available} 件`
 }
 
 async function addItem(itemId: string) {
@@ -176,8 +173,9 @@ function goBack() {
             <img class="food-item__image" :src="item.image" :alt="item.name" />
             <div class="food-item__body">
               <h4 class="food-item__name">{{ item.name }}</h4>
+              <p v-if="item.description" class="food-item__description">{{ item.description }}</p>
               <p class="food-item__stock" :class="{ 'food-item__stock--low': availableStockFor(item.id) <= 3 && item.status === 'online' }">
-                {{ stockLabel(item.id) || (item.description || '') }}
+                {{ stockLabel(item.id) }}
               </p>
               <div class="food-item__footer">
                 <span class="food-item__price">{{ item.price }}</span>

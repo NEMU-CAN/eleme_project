@@ -17,6 +17,7 @@ const notice = ref('')
 const profileError = ref('')
 const profileSuccess = ref('')
 const profileSaving = ref(false)
+const accountDeleting = ref(false)
 const avatarFileName = ref('')
 
 const profileForm = reactive({
@@ -63,6 +64,10 @@ function goAddress() {
 
 function goOpenShop() {
   router.push(user.value?.role === 1 ? '/merchant-center' : '/open-shop')
+}
+
+function goCustomerService() {
+  router.push('/customer-service')
 }
 
 function comingSoon() {
@@ -127,7 +132,30 @@ async function saveProfile() {
   }
 }
 
+async function deleteAccount() {
+  const confirmed = window.confirm('删除账户后将无法恢复，确定要继续吗？')
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    accountDeleting.value = true
+    profileError.value = ''
+    await store.deleteAccount()
+    router.push('/login')
+  } catch (cause) {
+    profileError.value = store.messageFromError(cause)
+  } finally {
+    accountDeleting.value = false
+  }
+}
+
 async function logout() {
+  const confirmed = window.confirm('确定要退出当前账户吗？')
+  if (!confirmed) {
+    return
+  }
+
   await store.logout()
   router.push('/')
 }
@@ -181,7 +209,7 @@ async function logout() {
         <span class="me-row__label">{{ user?.role === 1 ? '商家中心' : '我要开店' }}</span>
         <UiIcon class="me-row__arrow" name="chevronRight" :size="16" />
       </button>
-      <button type="button" class="me-row" @click="comingSoon">
+      <button type="button" class="me-row" @click="goCustomerService">
         <span class="me-row__icon"><UiIcon name="headphone" :size="22" /></span>
         <span class="me-row__label">我的客服</span>
         <UiIcon class="me-row__arrow" name="chevronRight" :size="16" />
@@ -231,6 +259,9 @@ async function logout() {
           {{ profileSaving ? '保存中' : '保存' }}
         </button>
       </div>
+      <button type="button" class="delete-account-button" :disabled="accountDeleting" @click="deleteAccount">
+        {{ accountDeleting ? '正在删除' : '删除账户' }}
+      </button>
     </div>
 
     <!-- 退出登录 -->

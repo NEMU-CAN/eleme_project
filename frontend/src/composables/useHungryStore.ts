@@ -15,6 +15,7 @@ import {
   type BusinessListQuery,
   type BusinessSaveRequest,
   type DeliveryAddressSaveRequest,
+  type FoodSaveRequest,
   type OrderListQuery,
   type OrderStatusRequest,
   type UserCreateRequest,
@@ -878,6 +879,14 @@ async function updateCurrentUser(payload: UserUpdateRequest) {
   }, { clearOn401: true })
 }
 
+async function deleteAccount() {
+  requireAuthUser()
+  return withLoading('session', async () => {
+    await elemeApi.deleteCurrentUser()
+    resetSession()
+  }, { clearOn401: true })
+}
+
 async function createBusiness(payload: BusinessSaveRequest) {
   requireAuthUser()
   return withLoading('merchant', async () => {
@@ -897,6 +906,49 @@ async function createBusiness(payload: BusinessSaveRequest) {
 
     persistSession()
     return merchant
+  }, { clearOn401: true })
+}
+
+async function updateManagedBusiness(businessId: string | number, payload: BusinessSaveRequest) {
+  requireAuthUser()
+  return withLoading('merchant', async () => {
+    await ensureTastesLoaded().catch(() => undefined)
+    const businessVo = await elemeApi.updateBusiness(businessId, payload)
+    const id = String(businessVo.business.id)
+    const foods = state.foodsByMerchantId[id] ?? businessVo.foods.map(mapFood)
+    const merchant = upsertMerchant(mapBusiness(businessVo.business, foods))
+    state.activeMerchantId = merchant.id
+    persistSession()
+    return merchant
+  }, { clearOn401: true })
+}
+
+async function loadManagedFoods(businessId: string | number) {
+  requireAuthUser()
+  return withLoading('merchant', async () => {
+    const id = Number(businessId)
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new Error('businessId 无效')
+    }
+    const data = await elemeApi.listFoods({ businessId: id })
+    return data.map(mapFood)
+  }, { clearOn401: true })
+}
+
+async function createManagedFood(payload: FoodSaveRequest) {
+  requireAuthUser()
+  return withLoading('action', async () => mapFood(await elemeApi.createFood(payload)), { clearOn401: true })
+}
+
+async function updateManagedFood(foodId: string | number, payload: FoodSaveRequest) {
+  requireAuthUser()
+  return withLoading('action', async () => mapFood(await elemeApi.updateFood(foodId, payload)), { clearOn401: true })
+}
+
+async function updateManagedFoodStatus(foodId: string | number, status: 0 | 1) {
+  requireAuthUser()
+  return withLoading('action', async () => {
+    await elemeApi.updateFoodStatus(foodId, { status })
   }, { clearOn401: true })
 }
 
@@ -1112,6 +1164,17 @@ async function confirmPayment(orderId: string | number, method?: PaymentMethod) 
   }, { clearOn401: true })
 }
 
+async function completeBusinessOrder(orderId: string | number) {
+  requireAuthUser()
+  return withLoading('action', async () => {
+    await elemeApi.updateOrderStatus(orderId, {
+      orderStatus: 2,
+    })
+    await loadOrders()
+    return getOrder(orderId)
+  }, { clearOn401: true })
+}
+
 async function cancelOrder(orderId: string | number) {
   requireAuthUser()
   return withLoading('action', async () => {
@@ -1231,7 +1294,13 @@ export function useHungryStore() {
     register,
     logout,
     updateCurrentUser,
+    deleteAccount,
     createBusiness,
+    updateManagedBusiness,
+    loadManagedFoods,
+    createManagedFood,
+    updateManagedFood,
+    updateManagedFoodStatus,
     createAddress,
     updateAddress,
     removeAddress,
@@ -1247,6 +1316,7 @@ export function useHungryStore() {
     clearCart,
     prepareCheckout,
     confirmPayment,
+    completeBusinessOrder,
     cancelOrder,
     checkoutSummary,
     cartCanCheckout,

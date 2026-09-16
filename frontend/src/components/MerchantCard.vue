@@ -35,6 +35,7 @@ const foods = computed(() => props.merchant.menuSections.flatMap((section) => se
       <div v-for="food in foods" :key="food.id" class="merchant-card__food">
         <img class="merchant-card__food-image" :src="food.image" :alt="food.name" />
         <span class="merchant-card__food-name">{{ food.name }}</span>
+        <span class="merchant-card__food-stock">剩余 {{ food.stock }} 件</span>
         <span class="merchant-card__food-price">¥{{ food.price }}</span>
       </div>
     </div>

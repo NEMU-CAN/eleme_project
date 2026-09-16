@@ -579,6 +579,11 @@ button:disabled {
   white-space: nowrap;
 }
 
+.merchant-card__food-stock {
+  color: var(--text-3);
+  font-size: 11px;
+}
+
 .merchant-card__food-price {
   font-size: 12px;
   color: var(--accent);
@@ -707,6 +712,15 @@ button:disabled {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
+}
+
+.food-item__description {
+  overflow: hidden;
+  margin: 3px 0 0;
+  color: var(--text-3);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .food-item__stock {
@@ -1091,9 +1105,12 @@ button:disabled {
 
 .me-row {
   display: flex;
+  width: 100%;
   align-items: center;
+  justify-content: flex-start;
   gap: 12px;
   padding: 14px;
+  text-align: left;
   border-bottom: 1px solid var(--line);
 }
 
@@ -1112,7 +1129,7 @@ button:disabled {
 }
 
 .me-row__label {
-  flex: 1;
+  flex: none;
   font-size: 15px;
   color: var(--text);
 }
@@ -1122,7 +1139,177 @@ button:disabled {
 }
 
 .me-row--danger .me-row__label {
+  flex: 1;
   color: var(--danger);
+}
+
+/* ---------- 我的客服 ---------- */
+.customer-service-page {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 430px);
+  height: 100dvh;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #f4f7fb;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.06);
+}
+
+.customer-service-status {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 12px 14px 0;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.customer-service-status__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--primary);
+  flex: none;
+}
+
+.customer-service-status strong {
+  font-size: 14px;
+}
+
+.customer-service-status p {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 0 0;
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.customer-service-status p span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.customer-service-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 14px;
+}
+
+.customer-service-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding-bottom: 64px;
+  text-align: center;
+}
+
+.customer-service-empty > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  color: var(--primary);
+  background: var(--primary-weak);
+}
+
+.customer-service-empty h2 {
+  margin: 14px 0 0;
+  font-size: 17px;
+}
+
+.customer-service-empty p {
+  margin: 7px 0 0;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.customer-service-message-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.customer-service-message {
+  max-width: 78%;
+  text-align: right;
+}
+
+.customer-service-message p {
+  margin: 0;
+  padding: 10px 13px;
+  border-radius: 15px 15px 3px 15px;
+  color: #fff;
+  background: var(--primary);
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: left;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.customer-service-message time {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-3);
+  font-size: 10px;
+}
+
+.customer-service-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+
+.customer-service-composer textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  max-height: 92px;
+  padding: 9px 12px;
+  resize: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 18px;
+  outline: none;
+  background: var(--panel-soft);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.customer-service-composer textarea:focus {
+  border-color: rgba(0, 137, 220, 0.45);
+  background: #fff;
+}
+
+.customer-service-composer button {
+  min-width: 60px;
+  min-height: 40px;
+  border-radius: 20px;
+  color: #fff;
+  background: var(--primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.customer-service-composer button:disabled {
+  opacity: 0.45;
 }
 
 /* ---------- 地址页 ---------- */
@@ -1284,6 +1471,25 @@ button:disabled {
 .form-actions .secondary-button,
 .form-actions .primary-button {
   flex: 1;
+}
+
+.delete-account-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 42px;
+  margin: -8px 0 14px;
+  border: 1px solid rgba(255, 83, 57, 0.28);
+  border-radius: 22px;
+  color: var(--danger);
+  background: rgba(255, 83, 57, 0.06);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.delete-account-button:disabled {
+  opacity: 0.5;
 }
 
 /* ---------- 商家入驻 ---------- */
@@ -1603,6 +1809,14 @@ button:disabled {
   box-shadow: var(--shadow-soft);
 }
 
+.merchant-module-card--clickable {
+  cursor: pointer;
+}
+
+.merchant-module-card--clickable:active {
+  transform: scale(0.99);
+}
+
 .merchant-module-card__icon {
   display: inline-flex;
   align-items: center;
@@ -1679,6 +1893,384 @@ button:disabled {
   margin: 9px 0 0;
   color: var(--text-3);
   font-size: 12px;
+}
+
+/* ---------- 商家订单管理 ---------- */
+.merchant-orders-page {
+  min-height: 100dvh;
+  width: min(100%, 430px);
+  margin: 0 auto;
+  padding-bottom: 24px;
+  background: #f4f7fb;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.06);
+}
+
+.merchant-orders-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin: 14px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.merchant-orders-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.merchant-orders-summary strong {
+  font-size: 21px;
+}
+
+.merchant-orders-summary span {
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.merchant-orders-summary button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  color: var(--primary);
+  background: var(--primary-weak);
+  font-size: 12px;
+}
+
+.merchant-orders-summary button:disabled {
+  opacity: 0.5;
+}
+
+.merchant-orders-filter {
+  padding: 0 14px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.merchant-orders-list {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px 0;
+}
+
+.merchant-order-card {
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.merchant-order-card__head,
+.merchant-order-card__meta,
+.merchant-order-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.merchant-order-card__head {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.merchant-order-card__head strong {
+  font-size: 14px;
+}
+
+.merchant-order-card__head p {
+  margin: 4px 0 0;
+  color: var(--text-3);
+  font-size: 10px;
+}
+
+.merchant-order-card__customer {
+  display: grid;
+  gap: 10px;
+  padding: 13px 14px;
+}
+
+.merchant-order-card__customer div {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 3px 8px;
+}
+
+.merchant-order-card__customer span,
+.merchant-order-card__customer p {
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.merchant-order-card__customer strong {
+  min-width: 0;
+  font-size: 12px;
+}
+
+.merchant-order-card__customer p {
+  grid-column: 2;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.merchant-order-card__details {
+  margin: 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-soft);
+}
+
+.merchant-order-card__details > p {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 12px;
+  text-align: center;
+}
+
+.merchant-order-card__meta {
+  padding: 12px 14px;
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.merchant-order-card__meta strong {
+  color: var(--accent);
+  font-size: 16px;
+}
+
+.merchant-order-card__actions {
+  justify-content: flex-end;
+  padding: 0 14px 13px;
+}
+
+.merchant-order-card__actions .secondary-button,
+.merchant-order-card__actions .primary-button {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 12px;
+}
+
+/* ---------- 商家菜品管理 ---------- */
+.merchant-foods-page {
+  min-height: 100dvh;
+  width: min(100%, 430px);
+  margin: 0 auto;
+  padding-bottom: 24px;
+  background: #f4f7fb;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.06);
+}
+
+.merchant-foods-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.merchant-foods-toolbar strong {
+  font-size: 15px;
+}
+
+.merchant-foods-toolbar p {
+  margin: 5px 0 0;
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.merchant-foods-toolbar .primary-button {
+  min-height: 36px;
+  padding: 0 13px;
+  font-size: 12px;
+}
+
+.merchant-food-form {
+  margin: 0 14px 14px;
+  padding: 6px 14px 14px;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.merchant-food-form__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.merchant-food-form__heading h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.merchant-food-form__heading button {
+  display: inline-flex;
+  padding: 5px;
+  color: var(--text-3);
+}
+
+.merchant-food-form .field__label {
+  width: 72px;
+}
+
+.merchant-food-form__actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 14px;
+}
+
+.merchant-food-form__actions button {
+  min-height: 38px;
+  flex: 1;
+}
+
+.merchant-food-list {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px 0;
+}
+
+.merchant-food-card {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  gap: 12px;
+  padding: 13px;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.merchant-food-card > img {
+  width: 78px;
+  height: 78px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--panel-soft);
+}
+
+.merchant-food-card__body {
+  min-width: 0;
+}
+
+.merchant-food-card__title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 7px;
+}
+
+.merchant-food-card__title > strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.merchant-food-card__body > p {
+  overflow: hidden;
+  margin: 5px 0;
+  color: var(--text-3);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.merchant-food-card__price {
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.merchant-food-card__stock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 5px;
+  color: var(--text-3);
+  font-size: 10px;
+}
+
+.merchant-food-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+
+.merchant-food-card__actions .secondary-button {
+  min-height: 32px;
+  padding: 0 13px;
+  font-size: 12px;
+}
+
+/* ---------- 商家店铺资料 ---------- */
+.merchant-profile-page {
+  min-height: 100dvh;
+  width: min(100%, 430px);
+  margin: 0 auto;
+  padding-bottom: 16px;
+  background: #f4f7fb;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.06);
+}
+
+.merchant-profile-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px;
+  padding: 13px;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.merchant-profile-preview img {
+  width: 58px;
+  height: 58px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--panel-soft);
+  flex: none;
+}
+
+.merchant-profile-preview div {
+  min-width: 0;
+  flex: 1;
+}
+
+.merchant-profile-preview strong {
+  font-size: 15px;
+}
+
+.merchant-profile-preview p {
+  overflow: hidden;
+  margin: 6px 0 0;
+  color: var(--text-3);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.merchant-profile-form {
+  margin: 0 14px;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.merchant-profile-form .field__label {
+  width: 76px;
 }
 
 /* ---------- 订单 / 结算页通用 ---------- */
