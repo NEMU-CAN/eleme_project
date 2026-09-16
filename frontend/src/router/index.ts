@@ -54,6 +54,12 @@ const router = createRouter({
       meta: { title: '我的' },
     },
     {
+      path: '/customer-service',
+      name: 'customer-service',
+      component: () => import('@/views/CustomerServiceView.vue'),
+      meta: { title: '我的客服' },
+    },
+    {
       path: '/addresses',
       name: 'addresses',
       component: () => import('@/views/AddressView.vue'),
@@ -82,6 +88,24 @@ const router = createRouter({
       name: 'merchant-center',
       component: () => import('@/views/MerchantCenterView.vue'),
       meta: { title: '商家中心' },
+    },
+    {
+      path: '/merchant-orders',
+      name: 'merchant-orders',
+      component: () => import('@/views/MerchantOrdersView.vue'),
+      meta: { title: '商家订单管理' },
+    },
+    {
+      path: '/merchant-foods',
+      name: 'merchant-foods',
+      component: () => import('@/views/MerchantFoodsView.vue'),
+      meta: { title: '菜品管理' },
+    },
+    {
+      path: '/merchant-profile',
+      name: 'merchant-profile',
+      component: () => import('@/views/MerchantProfileView.vue'),
+      meta: { title: '店铺资料' },
     },
     {
       path: '/login',

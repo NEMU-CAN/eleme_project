@@ -367,6 +367,11 @@ export const elemeApi = {
       body: JSON.stringify(payload),
     })
   },
+  deleteCurrentUser() {
+    return request<void>('/api/users', {
+      method: 'DELETE',
+    })
+  },
   listBusinesses(query: BusinessListQuery = {}) {
     return request<BackendBusiness[]>('/api/businesses', {}, query)
   },

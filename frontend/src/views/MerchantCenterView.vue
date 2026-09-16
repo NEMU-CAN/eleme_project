@@ -45,9 +45,9 @@ const overview = computed(() => [
 ])
 
 const modules = [
-  { title: '店铺管理', description: '门店资料、营业状态与配送设置', icon: 'store', tone: 'blue' },
-  { title: '菜品管理', description: '新增菜品、库存及上下架管理', icon: 'note', tone: 'orange' },
-  { title: '订单管理', description: '查看订单并处理已支付订单', icon: 'orders', tone: 'green' },
+  { title: '店铺管理', description: '门店资料、营业状态与配送设置', icon: 'store', tone: 'blue', route: '/merchant-profile' },
+  { title: '菜品管理', description: '新增菜品、库存及上下架管理', icon: 'note', tone: 'orange', route: '/merchant-foods' },
+  { title: '订单管理', description: '查看订单并处理已支付订单', icon: 'orders', tone: 'green', route: '/merchant-orders' },
   { title: '经营概览', description: '订单趋势、收入和经营数据', icon: 'invoice', tone: 'purple' },
 ]
 
@@ -67,6 +67,11 @@ async function syncDashboard() {
 }
 
 async function logout() {
+  const confirmed = window.confirm('确定要退出当前账户吗？')
+  if (!confirmed) {
+    return
+  }
+
   await store.logout()
   router.push('/login')
 }
@@ -121,7 +126,13 @@ onMounted(() => {
           <span>选择模块开始管理</span>
         </div>
         <div class="merchant-module-grid">
-          <article v-for="item in modules" :key="item.title" class="merchant-module-card">
+          <article
+            v-for="item in modules"
+            :key="item.title"
+            class="merchant-module-card"
+            :class="{ 'merchant-module-card--clickable': item.route }"
+            @click="item.route && router.push(item.route)"
+          >
             <span class="merchant-module-card__icon" :class="`merchant-module-card__icon--${item.tone}`">
               <UiIcon :name="item.icon" :size="26" />
             </span>
