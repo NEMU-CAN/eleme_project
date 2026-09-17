@@ -4,11 +4,13 @@ import com.iteleme.backend.common.FieldErrorVO;
 import com.iteleme.backend.config.JwtUtil;
 import com.iteleme.backend.constant.UserRole;
 import com.iteleme.backend.context.CurrentUserContext;
+import com.iteleme.backend.dto.AdminUserUpdateRequest;
 import com.iteleme.backend.dto.UserCreateRequest;
 import com.iteleme.backend.dto.UserUpdateRequest;
 import com.iteleme.backend.entity.User;
 import com.iteleme.backend.exception.ConflictException;
 import com.iteleme.backend.exception.ForbiddenException;
+import com.iteleme.backend.exception.NotFoundException;
 import com.iteleme.backend.exception.UnauthorizedException;
 import com.iteleme.backend.mapper.UserMapper;
 import com.iteleme.backend.service.UserService;
@@ -18,6 +20,8 @@ import com.iteleme.backend.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * 用户业务实现。
@@ -109,6 +113,68 @@ public class UserServiceImpl implements UserService {
         return UserVO.from(user);
     }
 
+    @Override
+    public List<UserVO> listForAdmin(String keyword, UserRole role, Integer status) {
+        ensureAdmin();
+        return userMapper.list(keyword == null ? null : keyword.trim(), role, status)
+                .stream()
+                .map(UserVO::from)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public UserVO updateForAdmin(Integer id, AdminUserUpdateRequest request) {
+        ensureAdmin();
+        User user = userMapper.findById(id);
+        if (user == null) {
+            throw new NotFoundException("用户不存在");
+        }
+
+        boolean isCurrentAdmin = user.getId().equals(CurrentUserContext.userId());
+        if (isCurrentAdmin && request.phone() != null && !request.phone().equals(user.getPhone())) {
+            throw new ForbiddenException("系统管理员登录账号不可修改");
+        }
+        if (isCurrentAdmin && request.role() != null && request.role() != UserRole.ADMIN) {
+            throw new ForbiddenException("系统管理员角色不可修改");
+        }
+        if (isCurrentAdmin && request.status() != null && request.status() != 0) {
+            throw new ForbiddenException("系统管理员账号不可禁用");
+        }
+
+        boolean invalidateToken = false;
+        if (request.phone() != null && !request.phone().equals(user.getPhone())) {
+            User exist = userMapper.findByPhone(request.phone());
+            if (exist != null && !exist.getId().equals(user.getId())) {
+                throw new ConflictException("手机号已存在", List.of(new FieldErrorVO("phone", "手机号已存在")));
+            }
+            user.setPhone(request.phone());
+            invalidateToken = true;
+        }
+        if (request.nickname() != null) {
+            user.setNickname(request.nickname());
+        }
+        if (request.avatar() != null) {
+            user.setAvatar(request.avatar());
+        }
+        if (request.gender() != null) {
+            user.setGender(request.gender());
+        }
+        if (request.role() != null && request.role() != user.getRole()) {
+            user.setRole(request.role());
+            invalidateToken = true;
+        }
+        if (request.status() != null && !request.status().equals(user.getStatus())) {
+            user.setStatus(request.status());
+            invalidateToken = true;
+        }
+        if (invalidateToken) {
+            user.setCurrentTokenHash(null);
+        }
+        userMapper.update(user);
+        return UserVO.from(user);
+    }
+
     /**
      * 退出登录：结束当前用户会话，使 token 失效。
      */
@@ -133,5 +199,11 @@ public class UserServiceImpl implements UserService {
 
     private User loadCurrentUser() {
         return userValidator.requireActive(CurrentUserContext.userId());
+    }
+
+    private void ensureAdmin() {
+        if (CurrentUserContext.role() != UserRole.ADMIN) {
+            throw new ForbiddenException("仅管理员可执行此操作");
+        }
     }
 }

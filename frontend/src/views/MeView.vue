@@ -186,7 +186,10 @@ async function logout() {
           <span class="me-order-item__label">全部</span>
         </button>
         <button type="button" class="me-order-item" @click="goOrders('paid')">
-          <span class="me-order-item__icon"><UiIcon name="scooter" :size="28" /></span>
+          <span class="me-order-item__icon me-order-item__icon--badge">
+            <UiIcon name="scooter" :size="28" />
+            <span v-if="store.paidOrders.value" class="me-order-item__badge">{{ store.paidOrders.value }}</span>
+          </span>
           <span class="me-order-item__label">配送中</span>
         </button>
         <button type="button" class="me-order-item" @click="goOrders('completed')">

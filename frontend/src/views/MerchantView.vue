@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
-import { formatBusinessStatus, formatCny } from '@/utils/format'
+import { formatBusinessHours, getBusinessHours } from '@/utils/businessHours'
 
 const router = useRouter()
 const route = useRoute()
@@ -13,6 +13,7 @@ const error = ref('')
 const merchantId = computed(() => String(route.params.merchantId || store.activeMerchant.value?.id || ''))
 const merchant = computed(() => store.getMerchant(merchantId.value) ?? null)
 const menuItems = computed(() => merchant.value?.menuSections.flatMap((section) => section.items) ?? [])
+const businessHours = computed(() => (merchant.value ? formatBusinessHours(getBusinessHours(merchant.value.id)) : ''))
 const cartSummary = computed(() => (merchant.value ? store.checkoutSummary(merchant.value.id) : {
   merchant: null,
   lines: [],
@@ -156,7 +157,7 @@ function goBack() {
           <h2 class="shop-header__name">{{ merchant.name }}</h2>
           <p class="shop-header__meta">
             ¥{{ merchant.minOrder ?? merchant.startPrice }} 起送 · 配送 ¥{{ merchant.deliveryFee }} ·
-            <span style="color: var(--success)">{{ formatBusinessStatus(merchant.status) }}</span>
+            <span style="color: var(--success)">营业时间 {{ businessHours }}</span>
           </p>
           <p class="shop-header__addr">{{ merchant.address || '商家暂未填写地址' }}</p>
         </div>

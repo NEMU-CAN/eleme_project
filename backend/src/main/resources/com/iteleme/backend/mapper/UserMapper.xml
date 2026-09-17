@@ -12,6 +12,23 @@
         select * from `user` where `phone` = #{phone}
     </select>
 
+    <select id="list" resultType="com.iteleme.backend.entity.User">
+        select * from `user`
+        <where>
+            <if test="keyword != null and keyword != ''">
+                and (`nickname` like concat('%', #{keyword}, '%')
+                    or `phone` like concat('%', #{keyword}, '%'))
+            </if>
+            <if test="role != null">
+                and `role` = #{role}
+            </if>
+            <if test="status != null">
+                and `status` = #{status}
+            </if>
+        </where>
+        order by `id` desc
+    </select>
+
     <select id="nextId" resultType="java.lang.Integer">
         select coalesce(max(`id`), 0) + 1 from `user`
     </select>

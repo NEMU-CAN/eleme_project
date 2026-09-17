@@ -89,3 +89,13 @@ export function formatBusinessStatus(value: BusinessStatus | null | undefined): 
 export function formatFoodStatus(value: FoodStatus | null | undefined): string {
   return value === 'online' ? '上架' : '下架'
 }
+
+// 判断订单是否超时：下单后超过指定分钟数（默认 15 分钟）即视为超时。
+export function isOrderTimeout(createdAt: string, timeoutMinutes = 15): boolean {
+  const normalized = createdAt.includes('T') ? createdAt : createdAt.replace(' ', 'T')
+  const date = new Date(normalized)
+  if (Number.isNaN(date.getTime())) {
+    return false
+  }
+  return Date.now() - date.getTime() > timeoutMinutes * 60 * 1000
+}

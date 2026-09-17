@@ -5,6 +5,7 @@ import BottomNav from '@/components/BottomNav.vue'
 import MerchantCard from '@/components/MerchantCard.vue'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
+import type { Merchant } from '@/types'
 
 const router = useRouter()
 const route = useRoute()
@@ -31,6 +32,9 @@ const activeStatus = computed(() => {
 
 const activeKeyword = computed(() => (typeof route.query.keyword === 'string' ? route.query.keyword.trim() : ''))
 
+// 搜索菜品命中的商家：与“商家名/地址”命中的结果合并展示。
+const foodMatchedMerchants = ref<Merchant[]>([])
+
 const heroAddress = computed(() => {
   if (store.activeAddress.value) {
     return store.activeAddress.value.detail
@@ -44,14 +48,31 @@ watch(activeKeyword, (value) => {
 
 watch(
   [activeTasteId, activeStatus, activeKeyword],
-  ([tasteId, status, keyword]) => {
+  async ([tasteId, status, keyword]) => {
+    if (keyword) {
+      foodMatchedMerchants.value = await store.searchMerchantsByFood(keyword).catch(() => [])
+    } else {
+      foodMatchedMerchants.value = []
+    }
     void store.loadBusinesses({ tasteId, status, keyword: keyword || null }).catch(() => undefined)
   },
   { immediate: true },
 )
 
+const displayMerchants = computed(() => {
+  const seen = new Set<string>()
+  const list: Merchant[] = []
+  for (const merchant of [...store.merchants, ...foodMatchedMerchants.value]) {
+    if (!seen.has(merchant.id)) {
+      seen.add(merchant.id)
+      list.push(merchant)
+    }
+  }
+  return list
+})
+
 const sortedMerchants = computed(() => {
-  const list = [...store.merchants]
+  const list = [...displayMerchants.value]
   if (sortMode.value === 'minOrder') {
     return list.sort((a, b) => (a.minOrder ?? a.startPrice) - (b.minOrder ?? b.startPrice))
   }

@@ -20,4 +20,6 @@ public interface BusinessService {
     BusinessVO update(Integer id, BusinessSaveRequest request);
 
     void status(Integer id, BusinessStatusRequest request);
+
+    void deactivate(Integer id);
 }

@@ -1,0 +1,233 @@
+/* ============================================================
+   ELEME 运营中枢 — 视图专属样式
+   ============================================================ */
+
+/* ---------- 登录页 ---------- */
+.login-view {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-view::before,
+.login-view::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.login-view::before {
+  width: 520px;
+  height: 520px;
+  background: var(--bg-glow-a);
+  top: -160px;
+  left: -120px;
+}
+
+.login-view::after {
+  width: 460px;
+  height: 460px;
+  background: var(--bg-glow-b);
+  bottom: -140px;
+  right: -100px;
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+  width: min(400px, 100%);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  padding: 40px 36px;
+}
+
+.login-card .brand-lockup {
+  border-bottom: none;
+  margin-bottom: 8px;
+  padding: 0 0 6px;
+}
+
+.login-card .brand-lockup small {
+  color: var(--text-muted);
+}
+
+.login-card .brand-lockup strong {
+  color: var(--text);
+}
+
+.login-card .login-subtitle {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 28px;
+}
+
+.login-card .field {
+  margin-bottom: 18px;
+}
+
+.login-card .btn-primary {
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.login-theme {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+
+.login-foot {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-faint);
+  letter-spacing: 1px;
+}
+
+/* ---------- 总览页 ---------- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  padding: 20px 22px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  filter: blur(4px);
+}
+
+.stat-card .stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  color: #fff;
+  margin-bottom: 14px;
+}
+
+.stat-card .stat-label {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.stat-card .stat-value {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.stat-card .stat-foot {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.stat-blue { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+.stat-cyan { background: linear-gradient(135deg, #0891b2, #22d3ee); }
+.stat-violet { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+.stat-emerald { background: linear-gradient(135deg, #059669, #34d399); }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.dashboard-grid .full {
+  grid-column: 1 / -1;
+}
+
+.donut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.donut-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.donut-row .bar-label {
+  width: 74px;
+  flex: none;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.donut-row .bar-track {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  overflow: hidden;
+}
+
+.donut-row .bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent-grad);
+}
+
+.donut-row .bar-value {
+  width: 44px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1200px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+}

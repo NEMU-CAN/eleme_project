@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import SiteHeader from '@/components/SiteHeader.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
 import { categories } from '@/data/categories'
+import { saveBusinessHours } from '@/utils/businessHours'
 
 const router = useRouter()
 const store = useHungryStore()
@@ -18,7 +19,8 @@ const form = reactive({
   tasteId: '',
   startPrice: 0,
   deliveryPrice: 0,
-  status: 1,
+  openTime: '09:00',
+  closeTime: '22:00',
 })
 
 function selectImage(event: Event) {
@@ -52,12 +54,16 @@ async function submit() {
     error.value = '请选择口味分类'
     return
   }
+  if (!form.openTime || !form.closeTime) {
+    error.value = '请填写营业时间'
+    return
+  }
 
   try {
     submitting.value = true
     error.value = ''
     const image = form.image ? await readImage(form.image) : null
-    await store.createBusiness({
+    const merchant = await store.createBusiness({
       name: form.name.trim(),
       address: form.address.trim(),
       description: form.description.trim() || null,
@@ -65,8 +71,10 @@ async function submit() {
       tasteId: Number(form.tasteId),
       startPrice: form.startPrice,
       deliveryPrice: form.deliveryPrice,
-      status: form.status,
+      // 成为商家默认关店，改为填写营业时间。
+      status: 0,
     })
+    saveBusinessHours(merchant.id, { open: form.openTime, close: form.closeTime })
     router.push('/merchant-center')
   } catch (cause) {
     error.value = store.messageFromError(cause)
@@ -140,10 +148,11 @@ async function submit() {
       </div>
 
       <div class="field">
-        <span class="field__label">营业状态</span>
-        <div class="seg">
-          <button type="button" class="seg__item" :class="{ 'seg__item--active': form.status === 1 }" @click="form.status = 1">营业中</button>
-          <button type="button" class="seg__item" :class="{ 'seg__item--active': form.status === 0 }" @click="form.status = 0">休息中</button>
+        <label class="field__label" for="shop-open-time">营业时间</label>
+        <div class="open-shop-hours">
+          <input id="shop-open-time" v-model="form.openTime" class="field__control" type="time" />
+          <span>至</span>
+          <input id="shop-close-time" v-model="form.closeTime" class="field__control" type="time" />
         </div>
       </div>
     </section>

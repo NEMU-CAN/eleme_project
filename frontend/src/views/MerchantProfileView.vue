@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import SiteHeader from '@/components/SiteHeader.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
 import { categories } from '@/data/categories'
+import { getBusinessHours, saveBusinessHours } from '@/utils/businessHours'
 
 const router = useRouter()
 const store = useHungryStore()
@@ -11,6 +12,7 @@ const error = ref('')
 const success = ref('')
 const imageFileName = ref('')
 const imageData = ref<string | null>(null)
+const deactivating = ref(false)
 const merchant = computed(() => store.state.activeMerchantId ? store.getMerchant(store.state.activeMerchantId) : null)
 const tasteOptions = computed(() => store.tasteCategories.value.length ? store.tasteCategories.value : categories)
 const saving = computed(() => store.state.loading.merchant)
@@ -23,6 +25,8 @@ const form = reactive({
   startPrice: 0,
   deliveryPrice: 0,
   status: 1 as 0 | 1,
+  openTime: '09:00',
+  closeTime: '22:00',
 })
 
 function fillForm() {
@@ -36,6 +40,9 @@ function fillForm() {
   form.startPrice = merchant.value.startPrice
   form.deliveryPrice = merchant.value.deliveryFee
   form.status = merchant.value.status === 'open' ? 1 : 0
+  const hours = getBusinessHours(merchant.value.id)
+  form.openTime = hours.open
+  form.closeTime = hours.close
 }
 
 function selectImage(event: Event) {
@@ -113,12 +120,34 @@ async function saveProfile() {
       deliveryPrice: Number(form.deliveryPrice),
       status: form.status,
     })
+    saveBusinessHours(merchant.value.id, { open: form.openTime, close: form.closeTime })
     imageFileName.value = ''
     imageData.value = null
     fillForm()
     success.value = '店铺资料已保存'
   } catch (cause) {
     error.value = store.messageFromError(cause)
+  }
+}
+
+async function deactivateShop() {
+  if (!merchant.value) {
+    return
+  }
+  const confirmed = window.confirm('注销店铺为永久操作，账号将从商家转为普通用户，确定继续吗？')
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    deactivating.value = true
+    error.value = ''
+    await store.deactivateBusiness(merchant.value.id)
+    router.replace('/me')
+  } catch (cause) {
+    error.value = store.messageFromError(cause)
+  } finally {
+    deactivating.value = false
   }
 }
 
@@ -199,6 +228,14 @@ onMounted(() => {
           <button type="button" class="seg__item" :class="{ 'seg__item--active': form.status === 0 }" @click="form.status = 0">休息中</button>
         </div>
       </div>
+      <div class="field">
+        <label class="field__label" for="merchant-open-time">营业时间</label>
+        <div class="open-shop-hours">
+          <input id="merchant-open-time" v-model="form.openTime" class="field__control" type="time" />
+          <span>至</span>
+          <input id="merchant-close-time" v-model="form.closeTime" class="field__control" type="time" />
+        </div>
+      </div>
     </section>
 
     <p v-if="error" class="auth-form__hint auth-form__hint--danger">{{ error }}</p>
@@ -209,5 +246,9 @@ onMounted(() => {
         {{ saving ? '保存中' : '保存资料' }}
       </button>
     </div>
+
+    <button type="button" class="delete-account-button" :disabled="deactivating || !merchant" @click="deactivateShop">
+      {{ deactivating ? '正在注销' : '注销店铺' }}
+    </button>
   </div>
 </template>

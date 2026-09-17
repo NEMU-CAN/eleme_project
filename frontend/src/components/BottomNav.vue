@@ -6,8 +6,8 @@ import { useHungryStore } from '@/composables/useHungryStore'
 
 const store = useHungryStore()
 
-// 购物车角标：统计所有商品数量。
-const cartCount = computed(() => store.state.cartItems.reduce((total, line) => total + line.quantity, 0))
+// 购物车角标：显示“商家”数量，而非菜品数量（按 businessId 去重）。
+const cartCount = computed(() => new Set(store.state.cartItems.map((line) => line.businessId)).size)
 
 // 底部三栏导航：首页 / 购物车 / 我的。
 const items = computed(() => [

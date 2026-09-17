@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/SiteHeader.vue'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
+import { phoneError, passwordError } from '@/utils/validation'
 import type { GenderType } from '@/types'
 
 const router = useRouter()
@@ -48,8 +49,9 @@ function selectAvatar(event: Event) {
 }
 
 async function submit() {
-  if (!form.phone.trim()) {
-    error.value = '请输入手机号'
+  const phoneMsg = phoneError(form.phone)
+  if (phoneMsg) {
+    error.value = phoneMsg
     return
   }
   if (!form.nickname.trim()) {
@@ -60,8 +62,9 @@ async function submit() {
     error.value = '昵称不能超过 20 个字符'
     return
   }
-  if (!form.password.trim()) {
-    error.value = '请输入密码'
+  const passwordMsg = passwordError(form.password)
+  if (passwordMsg) {
+    error.value = passwordMsg
     return
   }
   if (form.password !== form.confirm) {
@@ -78,7 +81,8 @@ async function submit() {
       gender: form.gender,
       avatar: form.avatar.trim() || null,
     })
-    router.push(typeof redirect === 'string' ? redirect : '/me')
+    // 注册后不算登录：跳转登录页，由用户重新输入信息登录。
+    router.push({ path: '/login', query: typeof redirect === 'string' ? { redirect } : {} })
   } catch (cause) {
     error.value = store.messageFromError(cause)
   } finally {
