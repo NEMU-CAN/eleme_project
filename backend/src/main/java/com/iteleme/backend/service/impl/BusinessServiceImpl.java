@@ -118,6 +118,25 @@ public class BusinessServiceImpl implements BusinessService {
         businessMapper.updateStatus(business.getId(), request.status());
     }
 
+    @Override
+    @Transactional
+    public void deactivate(Integer id) {
+        Business business = loadBusiness(id);
+        accessService.ensureBusinessOwner(id);
+        businessMapper.updateStatus(business.getId(), BusinessStatus.DELETED);
+
+        // 注销店铺后，若该用户不再拥有其它营业中/关店状态的店铺，则账号从商家降级为普通用户。
+        Integer currentUserId = CurrentUserContext.userId();
+        User user = userMapper.findById(currentUserId);
+        if (user != null && user.getRole() == UserRole.BUSINESS) {
+            List<Business> remaining = businessMapper.listByUserId(currentUserId);
+            if (remaining.isEmpty()) {
+                user.setRole(UserRole.CUSTOMER);
+                userMapper.update(user);
+            }
+        }
+    }
+
     private Business loadBusiness(Integer id) {
         Business business = businessMapper.findById(id);
         if (business == null || BusinessStatus.DELETED == business.getStatus()) {

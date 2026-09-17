@@ -1,7 +1,46 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(pdftotext -layout \"修改需求01.pdf\" -)",
+      "Bash(pdfinfo \"修改需求01.pdf\")",
+      "Bash(pdftoppm -png -r 150 \"修改需求01.pdf\" /tmp/req01)",
+      "Bash(ls -la /tmp/req01*.png)",
+      "Bash(cygpath -w /tmp/req01-1.png)",
+      "Bash(cygpath -w /tmp/req01-2.png)",
+      "Bash(pdftoppm -jpeg -r 110 \"修改需求01.pdf\" /tmp/reqj)",
+      "Bash(python -c \"import fitz; print\\('pymupdf ok', fitz.__doc__\\)\")",
+      "Bash(python -c \"import pdfplumber; print\\('pdfplumber ok'\\)\")",
+      "Bash(python -c \"import pypdf; print\\('pypdf ok'\\)\")",
+      "Bash(python *)",
+      "mcp__chrome-devtools__new_page",
+      "mcp__chrome-devtools__take_screenshot",
+      "mcp__chrome-devtools__take_snapshot",
+      "mcp__chrome-devtools__list_network_requests",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/api/tastes)",
+      "Bash(java -version)",
+      "Bash(./mvnw spring-boot:run)",
+      "Bash(curl *)",
+      "Bash(mysql -uroot -p1234 -h127.0.0.1 -P3306 elm -e \"SELECT id, nickname, phone, role, status, gender FROM \\\\`user\\\\`;\")",
+      "Bash(mysql -uroot -p1234 -h127.0.0.1 -P3306 elm -e \"SELECT id, phone, role, status FROM \\\\`user\\\\` WHERE role=2 OR phone='admin';\")",
+      "Bash(npx vue-tsc *)",
+      "Bash(where pdftotext *)",
+      "Bash(where python *)",
+      "Bash(pdftotext -layout '接口设计.pdf' -)",
+      "Bash(echo \"EXIT: $?\")",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__list_pages",
+      "mcp__chrome-devtools__click",
+      "mcp__chrome-devtools__wait_for",
+      "Bash(./mvnw -q -o spring-boot:run)",
+      "mcp__chrome-devtools__evaluate_script",
+      "Bash(./mvnw -q -o spring-boot:run -Dspring-boot.run.arguments=--server.port=8081)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Get-CimInstance *)",
+      "Bash(taskkill //F //PID 20188)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //F //PID 24544)"
     ]
   }
 }

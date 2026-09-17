@@ -30,25 +30,19 @@ const today = computed(() => {
   return `${date.getFullYear()}-${month}-${day}`
 })
 const todayOrders = computed(() => merchantOrders.value.filter((order) => order.createdAt.slice(0, 10) === today.value))
-const pendingOrders = computed(() => merchantOrders.value.filter((order) => order.status === 'paid'))
+// 今日营业额：当日已支付或已完成的订单实付金额之和。
 const todayRevenue = computed(() => todayOrders.value
-  .filter((order) => order.status === 'completed')
+  .filter((order) => order.status === 'paid' || order.status === 'completed')
   .reduce((total, order) => total + order.total, 0))
-const onlineFoodCount = computed(() => merchant.value?.menuSections
-  .flatMap((section) => section.items)
-  .filter((food) => food.status === 'online').length ?? 0)
 const overview = computed(() => [
   { label: '今日订单', value: String(todayOrders.value.length), unit: '单' },
-  { label: '待处理', value: String(pendingOrders.value.length), unit: '单' },
   { label: '今日营业额', value: todayRevenue.value.toFixed(2), unit: '元' },
-  { label: '在售商品', value: String(onlineFoodCount.value), unit: '件' },
 ])
 
 const modules = [
-  { title: '店铺管理', description: '门店资料、营业状态与配送设置', icon: 'store', tone: 'blue', route: '/merchant-profile' },
+  { title: '店铺管理', description: '门店资料、营业时间与配送设置', icon: 'store', tone: 'blue', route: '/merchant-profile' },
   { title: '菜品管理', description: '新增菜品、库存及上下架管理', icon: 'note', tone: 'orange', route: '/merchant-foods' },
   { title: '订单管理', description: '查看订单并处理已支付订单', icon: 'orders', tone: 'green', route: '/merchant-orders' },
-  { title: '经营概览', description: '订单趋势、收入和经营数据', icon: 'invoice', tone: 'purple' },
 ]
 
 async function syncDashboard() {
@@ -142,17 +136,6 @@ onMounted(() => {
             </div>
             <UiIcon class="merchant-module-card__arrow" name="chevronRight" :size="18" />
           </article>
-        </div>
-      </section>
-
-      <section class="merchant-center-section merchant-center-todo">
-        <div class="merchant-center-section__heading">
-          <h2>待办事项</h2>
-          <span>{{ pendingOrders.length }} 项待处理</span>
-        </div>
-        <div class="merchant-center-todo__empty">
-          <UiIcon name="check" :size="30" />
-          <p>{{ pendingOrders.length ? `有 ${pendingOrders.length} 个已支付订单等待处理` : '暂无待办，门店一切正常' }}</p>
         </div>
       </section>
     </main>

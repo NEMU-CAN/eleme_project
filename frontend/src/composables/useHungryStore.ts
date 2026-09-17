@@ -570,6 +570,7 @@ const isAuthenticated = computed(() => Boolean(state.token && state.user))
 const unpaidOrders = computed(() => state.orders.filter((order) => order.status === 'unpaid').length)
 const unreadOrders = unpaidOrders
 const completedOrders = computed(() => state.orders.filter((order) => order.status === 'completed').length)
+const paidOrders = computed(() => state.orders.filter((order) => order.status === 'paid').length)
 const cartLines = computed(() => (state.activeMerchantId ? cartLinesForMerchant(state.activeMerchantId) : []))
 const cartSummary = computed(() => {
   const merchant = activeMerchant.value
@@ -843,9 +844,9 @@ async function login(phone: string, password: string) {
 }
 
 async function register(payload: UserCreateRequest) {
+  // 注册成功后不算作登录：仅创建账号，由注册页跳转到登录页让用户重新登录。
   return withLoading('session', async () => {
     await elemeApi.register(payload)
-    return performLogin(payload.phone, payload.password)
   })
 }
 
@@ -920,6 +921,60 @@ async function updateManagedBusiness(businessId: string | number, payload: Busin
     state.activeMerchantId = merchant.id
     persistSession()
     return merchant
+  }, { clearOn401: true })
+}
+
+// 按菜品关键词搜索：返回“含有该菜品”的商家列表，用于首页搜索菜品的补充结果。
+async function searchMerchantsByFood(keyword: string) {
+  const term = keyword?.trim()
+  if (!term) {
+    return []
+  }
+
+  return withLoading('businesses', async () => {
+    await ensureTastesLoaded().catch(() => undefined)
+    const foods = await elemeApi.listFoods({ keyword: term })
+    const businessIds = Array.from(
+      new Set(foods.map((food) => toNumber(food.businessId, 0)).filter((id) => id > 0)),
+    )
+
+    const merchants: Merchant[] = []
+    for (const businessId of businessIds) {
+      const existing = getMerchant(businessId)
+      if (existing) {
+        merchants.push(existing)
+        continue
+      }
+      const businessVo = await elemeApi.getBusiness(businessId)
+      const mappedFoods = businessVo.foods.map(mapFood)
+      state.foodsByMerchantId[String(businessId)] = mappedFoods
+      merchants.push(upsertMerchant(mapBusiness(businessVo.business, mappedFoods)))
+    }
+    return merchants
+  })
+}
+
+// 注销店铺：永久注销，账号由商家转为普通用户。
+async function deactivateBusiness(businessId: string | number) {
+  requireAuthUser()
+  return withLoading('merchant', async () => {
+    await elemeApi.deactivateBusiness(businessId)
+    const id = String(businessId)
+
+    // 刷新当前用户资料（角色可能已降级为普通用户）。
+    const user = mapUser(await elemeApi.getCurrentUser())
+    state.user = user
+
+    replaceArray(state.ownedMerchantIds, state.ownedMerchantIds.filter((item) => item !== id))
+    if (state.activeMerchantId === id) {
+      state.activeMerchantId = state.ownedMerchantIds[0] ?? ''
+    }
+    const merchant = getMerchant(id)
+    if (merchant) {
+      merchant.status = 'deleted'
+    }
+    persistSession()
+    return user
   }, { clearOn401: true })
 }
 
@@ -1280,6 +1335,7 @@ export function useHungryStore() {
     unpaidOrders,
     unreadOrders,
     completedOrders,
+    paidOrders,
     isAuthenticated,
     initialize,
     loadTastes,
@@ -1297,6 +1353,8 @@ export function useHungryStore() {
     deleteAccount,
     createBusiness,
     updateManagedBusiness,
+    deactivateBusiness,
+    searchMerchantsByFood,
     loadManagedFoods,
     createManagedFood,
     updateManagedFood,

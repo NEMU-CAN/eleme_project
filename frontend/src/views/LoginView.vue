@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/SiteHeader.vue'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
+import { phoneError } from '@/utils/validation'
 
 const router = useRouter()
 const route = useRoute()
@@ -20,8 +21,9 @@ const error = ref('')
 const loading = ref(false)
 
 async function submit() {
-  if (!form.phone.trim()) {
-    error.value = '请输入手机号'
+  const phoneMsg = phoneError(form.phone)
+  if (phoneMsg) {
+    error.value = phoneMsg
     return
   }
   if (!form.password.trim()) {

@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/SiteHeader.vue'
 import UiIcon from '@/components/UiIcon.vue'
 import { useHungryStore } from '@/composables/useHungryStore'
-import { formatCny, formatOrderStatus, formatOrderTime } from '@/utils/format'
+import { formatCny, formatOrderStatus, formatOrderTime, isOrderTimeout } from '@/utils/format'
 import type { OrderStatus } from '@/types'
 
 const router = useRouter()
@@ -67,6 +67,14 @@ function statusClass(status: OrderStatus) {
   return 'status-pill status-pill--warning'
 }
 
+// 配送中订单：超过 15 分钟标记为超时。
+function statusText(order: { status: OrderStatus; createdAt: string }) {
+  if (order.status === 'paid' && isOrderTimeout(order.createdAt)) {
+    return '已超时'
+  }
+  return formatOrderStatus(order.status)
+}
+
 function goPayment(orderId: string) {
   router.push(`/payment/${orderId}`)
 }
@@ -112,7 +120,7 @@ function goBack() {
             <p class="order-card__name">{{ order.merchantName }}</p>
             <p class="order-card__time">{{ formatOrderTime(order.createdAt) }}</p>
           </div>
-          <span :class="statusClass(order.status)">{{ formatOrderStatus(order.status) }}</span>
+          <span :class="statusClass(order.status)">{{ statusText(order) }}</span>
         </div>
 
         <div class="order-card__lines">

@@ -399,6 +399,11 @@ export const elemeApi = {
       body: JSON.stringify(payload),
     })
   },
+  deactivateBusiness(businessId: string | number) {
+    return request<void>(`/api/businesses/${encodePath(businessId)}`, {
+      method: 'DELETE',
+    })
+  },
   listFoods(query: FoodListQuery = {}) {
     return request<BackendFood[]>('/api/foods', {}, query)
   },
